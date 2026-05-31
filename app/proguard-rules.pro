@@ -19,3 +19,29 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# ==========================================
+# Pengecualian untuk PyTorch & Facebook JNI
+# ==========================================
+-keep class org.pytorch.** { *; }
+-keep class com.facebook.jni.** { *; }
+
+# ==========================================
+# Pengecualian untuk OpenCV
+# ==========================================
+-keep class org.opencv.** { *; }
+-keep interface org.opencv.** { *; }
+
+# ==========================================
+# Pengecualian untuk Data Class & History
+# ==========================================
+-keep class com.dika.myaksoro.HistoryItem { *; }
+
+# Mengabaikan peringatan library yang bentrok
+-dontwarn org.pytorch.**
+-dontwarn org.opencv.**
+
+# Mengabaikan peringatan anotasi yang hilang dari library Facebook JNI / PyTorch
+-dontwarn javax.annotation.**
+-keep class javax.annotation.** { *; }
+-keepattributes *Annotation*
