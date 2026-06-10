@@ -104,15 +104,24 @@ class AksoroEngine(private val context: Context) {
         return file.absolutePath
     }
 
-    fun processImage(bitmap: Bitmap): PipelineResult {
+    fun processImage(bitmap: Bitmap, onProgress: ((Float, String) -> Unit)? = null): PipelineResult {
         Log.d("Aksoro", "Memulai pemrosesan gambar OpenCV...")
 
         // 1. Jalankan Segmentasi OpenCV
+        onProgress?.invoke(0.05f, "Memotong gambar aksara (OpenCV)...")
         val (segmentedBitmaps, annotatedBmp) = segmentCharacters(bitmap)
         Log.d("Aksoro", "Berhasil memotong ${segmentedBitmaps.size} aksara")
 
         // 2. Looping potongan gambar ke PyTorch MobileNetV2
-        val cnnResults = classifyCharacters(segmentedBitmaps)
+        // val cnnResults = classifyCharacters(segmentedBitmaps)
+        onProgress?.invoke(0.15f, "Mendeteksi karakter (MobileNetV2)...")
+        // 2. Kirim fungsi onProgress ke dalam classifyCharacters
+        val cnnResults = classifyCharacters(segmentedBitmaps) { progress ->
+            // Mengubah skala progress dari 0-100% milik klasifikasi menjadi porsi 15% - 50% di loading utama
+            onProgress?.invoke(0.15f + (0.35f * progress), "Mendeteksi karakter (MobileNetV2)...")
+        }
+
+        val chunkStrings = mutableListOf<String>()
 
         // 3. Looping hasil MobileNetV2 ke PyTorch Seq2Seq LSTM
         var finalLstmString = ""
@@ -134,8 +143,15 @@ class AksoroEngine(private val context: Context) {
             for (i in tokenBatches.indices) {
                 val batch = tokenBatches[i]
                 val translatedChunk = translateSeq2Seq(batch)
+
+                // KODE INI YANG MENGGABUNGKAN ARRAY DAN HASILNYA!
+                chunkStrings.add("$batch: $translatedChunk")
                 Log.d("Aksoro_Debug", "Hasil Translasi Batch ${i + 1}: $translatedChunk")
                 translatedBuilder.append(translatedChunk)
+
+                // 3. Laporkan progress translasi setiap kali 1 batch selesai
+                val progress = (i + 1).toFloat() / tokenBatches.size
+                onProgress?.invoke(0.55f + (0.40f * progress), "Mentranslasikan ke Latin (Seq2Seq)...")
             }
 
             finalLstmString = translatedBuilder.toString()
@@ -148,6 +164,7 @@ class AksoroEngine(private val context: Context) {
 
         return PipelineResult(
             cnnOutput = cnnResults,
+            chunkResults = chunkStrings,
             lstmOutput = finalLstmString,
             debugImage = annotatedBmp
         )
@@ -156,11 +173,13 @@ class AksoroEngine(private val context: Context) {
     // ==============================================================================
     // FUNGSI INFERENSI PYTORCH (MobileNetV2)
     // ==============================================================================
-    private fun classifyCharacters(charBitmaps: List<Bitmap>): List<String> {
+    private fun classifyCharacters(charBitmaps: List<Bitmap>, onProgress: ((Float) -> Unit)? = null): List<String> {
         val results = mutableListOf<String>()
-        if (cnnModule == null) return results
+        if (cnnModule == null || charBitmaps.isEmpty()) return results
 
-        for (bitmap in charBitmaps) {
+        for (i in charBitmaps.indices) {
+            val bitmap = charBitmaps[i]
+
             // 1. Resize gambar ke 224x224
             val resizedBmp = Bitmap.createScaledBitmap(bitmap, 224, 224, true)
 
@@ -236,6 +255,9 @@ class AksoroEngine(private val context: Context) {
             } else {
                 Log.d("Aksoro", "Tebakan dibuang karena confidence di bawah ambang batas (0.25)")
             }
+
+            // === LAPORKAN PROGRESS PER KARAKTER KE FUNGSI UTAMA ===
+            onProgress?.invoke((i + 1).toFloat() / charBitmaps.size)
         }
         return results
     }
@@ -547,6 +569,7 @@ class AksoroEngine(private val context: Context) {
 
     data class PipelineResult(
         val cnnOutput: List<String>,
+        val chunkResults: List<String>,
         val lstmOutput: String,
         val debugImage: Bitmap? = null,
     )
