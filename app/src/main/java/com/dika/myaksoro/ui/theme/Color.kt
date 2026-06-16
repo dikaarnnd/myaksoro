@@ -40,8 +40,8 @@ val lightModeColors = AksoroColors(
     textTertiary = Color(0xFF9E9E9E),
     textOnPrimary = Color(0xFFFFFFFF),
     textOnSecondary = Color(0xFF121212),
-    boxHistoryPrimary = Color(0xFFFFFFFF),
-    boxHistorySecondary = Color(0xFFEEEEEE),
+    boxHistoryPrimary = Color(0xFFEEEEEE),
+    boxHistorySecondary = Color(0xFFFFFFFF),
     cardBg = Color(0xFFFFFFFF),
     overlayBg = Color(0xD9000000)
 )

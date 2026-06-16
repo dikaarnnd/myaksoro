@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
 fun AksoroMainApp(engine: AksoroEngine) {
     val context = LocalContext.current
     val navController = rememberNavController()
-    val manropeFont = FontFamily(Font(R.font.manrope))
+    val interFont = FontFamily(Font(R.font.inter))
 
     var isDarkTheme by remember { mutableStateOf(false) }
     val colors = if (isDarkTheme) darkModeColors else lightModeColors
@@ -96,10 +96,11 @@ fun AksoroMainApp(engine: AksoroEngine) {
                 title = {
                     Text(
                         text = titleText,
-                        fontFamily = manropeFont,
+                        fontFamily = interFont,
                         fontWeight = FontWeight.ExtraBold,
                         color = colors.textPrimary,
-                        fontSize = 22.sp
+                        fontSize = 22.sp,
+                        letterSpacing = (-0.5).sp
                     )
                 },
                 actions = {
@@ -126,7 +127,7 @@ fun AksoroMainApp(engine: AksoroEngine) {
 
                 NavigationBarItem(
                     icon = { Icon(Icons.Filled.Home, contentDescription = "Beranda") },
-                    label = { Text("Beranda", fontFamily = manropeFont) },
+                    label = { Text("Beranda", fontFamily = interFont, fontWeight = FontWeight.Medium) },
                     selected = currentRoute == "home",
                     onClick = {
                         navController.navigate("home") {
@@ -146,7 +147,7 @@ fun AksoroMainApp(engine: AksoroEngine) {
 
                 NavigationBarItem(
                     icon = { Icon(Icons.Filled.List, contentDescription = "Riwayat") },
-                    label = { Text("Riwayat", fontFamily = manropeFont) },
+                    label = { Text("Riwayat", fontFamily = interFont, fontWeight = FontWeight.Medium) },
                     selected = currentRoute == "history",
                     onClick = {
                         navController.navigate("history") {
@@ -189,7 +190,7 @@ fun AksoroMainApp(engine: AksoroEngine) {
                     onShowProcessButtonChange = { showProcessButton = it },
                     isInferencing = isInferencing,
                     onInferencingChange = { isInferencing = it },
-                    manropeFont = manropeFont
+                    appFont = interFont
                 )
             }
             composable("history") {
@@ -197,7 +198,7 @@ fun AksoroMainApp(engine: AksoroEngine) {
                     context = context,
                     historyList = historyList,
                     colors = colors,
-                    manropeFont = manropeFont
+                    appFont = interFont
                 )
             }
         }

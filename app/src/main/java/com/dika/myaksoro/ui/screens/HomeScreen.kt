@@ -17,6 +17,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -39,6 +40,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 
 @Composable
 fun HomeScreen(
@@ -58,7 +67,7 @@ fun HomeScreen(
     onShowProcessButtonChange: (Boolean) -> Unit,
     isInferencing: Boolean,
     onInferencingChange: (Boolean) -> Unit,
-    manropeFont: FontFamily
+    appFont: FontFamily
 ) {
     val coroutineScope = rememberCoroutineScope()
 
@@ -123,18 +132,24 @@ fun HomeScreen(
                 colors = CardDefaults.cardColors(containerColor = colors.cardBg)
             ) {
                 if (selectedBitmap != null) {
-                    Image(
+//                    Image(
+//                        bitmap = selectedBitmap!!.asImageBitmap(),
+//                        contentDescription = "Preview Gambar",
+//                        modifier = Modifier.fillMaxWidth().wrapContentHeight(),
+//                        contentScale = ContentScale.FillWidth
+//                    )
+                    ZoomableImage(
                         bitmap = selectedBitmap!!.asImageBitmap(),
                         contentDescription = "Preview Gambar",
-                        modifier = Modifier.fillMaxWidth().wrapContentHeight(),
-                        contentScale = ContentScale.FillWidth
+                        appFont = appFont,
+                        isHistoryCard = false
                     )
                 } else {
                     Box(
                         modifier = Modifier.fillMaxWidth().height(180.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("Belum ada gambar", fontFamily = manropeFont, color = colors.textTertiary)
+                        Text("Belum ada gambar", fontFamily = appFont, fontWeight = FontWeight.Medium, color = colors.textTertiary)
                     }
                 }
             }
@@ -148,45 +163,128 @@ fun HomeScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 if (cnnResult.isEmpty()) {
-                    // TAMPILAN SAAT KOSONG (TEPAT DI TENGAH)
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 48.dp), // Padding atas-bawah yang lebih besar agar proporsional
+                            .padding(vertical = 48.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = "Hasil transliterasi akan muncul di sini.",
-                            fontFamily = manropeFont,
+                            fontFamily = appFont,
                             fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
                             color = colors.textSecondary,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                     }
                 } else {
-                    // TAMPILAN SETELAH AI SELESAI MEMPROSES (RATA KIRI / START)
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(20.dp),
                         horizontalAlignment = Alignment.Start
                     ) {
-                        Text("HASIL KLASIFIKASI", fontFamily = manropeFont, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textSecondary)
-                        Text(cnnResult.toString(), fontFamily = manropeFont, fontSize = 14.sp, color = colors.textPrimary, modifier = Modifier.padding(top = 4.dp))
+                        Text(
+                            text = "HASIL DETEKSI",
+                            fontFamily = appFont,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = colors.textSecondary,
+                            letterSpacing = 1.5.sp
+                        )
 
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        if (chunkResult.isNotEmpty()) {
-                            Text("CARA MEMBACA:", fontFamily = manropeFont, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textSecondary)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            chunkResult.forEachIndexed { index, chunkStr ->
-                                Text("${index + 1}. $chunkStr", fontFamily = manropeFont, fontSize = 14.sp, color = colors.textPrimary)
+                        if (cnnResult.isEmpty()) {
+                            Text("-", fontFamily = appFont, fontSize = 14.sp, color = colors.textPrimary, modifier = Modifier.padding(top = 4.dp))
+                        } else {
+                            LazyRow(
+                                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(cnnResult.size) { index ->
+                                    Box(
+                                        modifier = Modifier
+                                            .background(colors.bgApp, RoundedCornerShape(8.dp))
+                                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        Text(
+                                            text = "${index + 1}. ${cnnResult[index]}",
+                                            fontFamily = appFont,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            letterSpacing = 0.5.sp,
+                                            color = colors.textPrimary
+                                        )
+                                    }
+                                }
                             }
-                            Spacer(modifier = Modifier.height(16.dp))
                         }
 
-                        Text("HASIL TRANSLASI", fontFamily = manropeFont, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textSecondary)
-                        Text(lstmResult, fontFamily = manropeFont, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary, modifier = Modifier.padding(top = 8.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        if (chunkResult.isNotEmpty()) {
+                            Text(
+                                text = "CARA MEMBACA",
+                                fontFamily = appFont,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = colors.textSecondary,
+                                letterSpacing = 1.5.sp
+                            )
+
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                chunkResult.forEachIndexed { index, chunkStr ->
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(colors.bgApp, RoundedCornerShape(8.dp))
+                                            .padding(14.dp)
+                                    ) {
+                                        Text(
+                                            text = "${index + 1}.  $chunkStr",
+                                            fontFamily = appFont,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            letterSpacing = 0.3.sp,
+                                            lineHeight = 22.sp,
+                                            color = colors.textPrimary
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(20.dp))
+                        }
+
+                        Text(
+                            text = "HASIL TRANSLITERASI",
+                            fontFamily = appFont,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = colors.textSecondary,
+                            letterSpacing = 1.5.sp
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(colors.btnPrimary, RoundedCornerShape(12.dp))
+                                .padding(vertical = 20.dp, horizontal = 16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = lstmResult,
+                                fontFamily = appFont,
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 0.5.sp,
+                                color = colors.textOnPrimary,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
                     }
                 }
             }
@@ -212,7 +310,7 @@ fun HomeScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = colors.btnPrimary),
                     shape = RoundedCornerShape(24.dp)
                 ) {
-                    Text("Ambil Foto", fontFamily = manropeFont, fontWeight = FontWeight.Bold, color = colors.textOnPrimary)
+                    Text("Ambil Foto", fontFamily = appFont, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp, color = colors.textOnPrimary)
                 }
 
                 Button(
@@ -228,7 +326,7 @@ fun HomeScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = colors.btnSecondary),
                     shape = RoundedCornerShape(24.dp)
                 ) {
-                    Text("Unggah Foto", fontFamily = manropeFont, fontWeight = FontWeight.Bold, color = colors.textOnSecondary)
+                    Text("Unggah Foto", fontFamily = appFont, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp, color = colors.textOnSecondary)
                 }
             }
 
@@ -244,9 +342,7 @@ fun HomeScreen(
                             loadingProgress = 0f
                             loadingText = "Memulai..."
 
-                            // Jalankan proses mesin AI di background
                             val (engineResult, savedPath) = withContext(Dispatchers.IO) {
-                                // TANGKAP LAPORAN PROGRESS DARI MESIN SECARA REAL-TIME
                                 val res = engine.processImage(selectedBitmap!!) { progress, text ->
                                     loadingProgress = progress
                                     loadingText = text
@@ -255,10 +351,9 @@ fun HomeScreen(
                                 Pair(res, path)
                             }
 
-                            // AI selesai bekerja! Penuhkan progress bar
                             loadingProgress = 1.0f
                             loadingText = "Selesai!"
-                            delay(400) // Tahan sebentar agar user sempat membaca tulisan "Selesai!"
+                            delay(400)
 
                             val debugImg = engineResult.debugImage ?: selectedBitmap!!
                             onSelectedBitmapChange(debugImg)
@@ -283,7 +378,7 @@ fun HomeScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = colors.btnAccent),
                     shape = RoundedCornerShape(24.dp)
                 ) {
-                    Text("Mulai Transliterasi AI", fontFamily = manropeFont, fontWeight = FontWeight.Bold, color = colors.textOnPrimary)
+                    Text("Mulai Transliterasi", fontFamily = appFont, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp, color = colors.textOnPrimary)
                 }
             }
 
@@ -295,15 +390,16 @@ fun HomeScreen(
 
                 Text(
                     text = "Riwayat Terbaru",
-                    fontFamily = manropeFont,
+                    fontFamily = appFont,
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.ExtraBold,
                     color = colors.textPrimary,
                     modifier = Modifier.align(Alignment.Start).padding(bottom = 16.dp)
                 )
 
                 recentHistory.forEachIndexed { index, item ->
-                    val cardColor = if (index % 2 == 0) colors.boxHistoryPrimary else colors.boxHistorySecondary
+                    // val cardColor = if (index % 2 == 0) colors.boxHistoryPrimary else colors.boxHistorySecondary
+                    val cardColor = colors.boxHistorySecondary
 
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
@@ -313,26 +409,112 @@ fun HomeScreen(
                     ) {
                         Column {
                             if (item.bitmapCache != null) {
-                                Image(
+                                // MENGGUNAKAN KOMPONEN ZOOMABLE IMAGE
+                                ZoomableImage(
                                     bitmap = item.bitmapCache!!.asImageBitmap(),
                                     contentDescription = "Gambar Riwayat",
-                                    modifier = Modifier.fillMaxWidth().wrapContentHeight().heightIn(max = 450.dp),
-                                    contentScale = ContentScale.FillWidth
+                                    appFont = appFont,
+                                    isHistoryCard = true
                                 )
                             }
                             Column(modifier = Modifier.padding(16.dp)) {
-                                Text("Klasifikasi: ${if (item.cnnOutput.isEmpty()) "[]" else item.cnnOutput.toString()}", fontFamily = manropeFont, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textSecondary)
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "HASIL DETEKSI",
+                                    fontFamily = appFont,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = colors.textSecondary,
+                                    letterSpacing = 1.2.sp
+                                )
+
+                                if (item.cnnOutput.isEmpty()) {
+                                    Text("-", fontFamily = appFont, fontSize = 12.sp, color = colors.textPrimary, modifier = Modifier.padding(top = 4.dp))
+                                } else {
+                                    LazyRow(
+                                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        items(item.cnnOutput.size) { idx ->
+                                            Box(
+                                                modifier = Modifier
+                                                    .background(colors.bgApp, RoundedCornerShape(6.dp))
+                                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                                            ) {
+                                                Text(
+                                                    text = "${idx + 1}. ${item.cnnOutput[idx]}",
+                                                    fontFamily = appFont,
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    letterSpacing = 0.5.sp,
+                                                    color = colors.textPrimary
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(16.dp))
 
                                 if (item.chunkResults.isNotEmpty()) {
-                                    Text("Cara membaca:", fontFamily = manropeFont, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textSecondary)
-                                    item.chunkResults.forEachIndexed { idx, chunk ->
-                                        Text("${idx + 1}. $chunk", fontFamily = manropeFont, fontSize = 14.sp, color = colors.textPrimary)
+                                    Text(
+                                        text = "CARA MEMBACA",
+                                        fontFamily = appFont,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = colors.textSecondary,
+                                        letterSpacing = 1.2.sp
+                                    )
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        item.chunkResults.forEachIndexed { idx, chunk ->
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .background(colors.bgApp, RoundedCornerShape(6.dp))
+                                                    .padding(10.dp)
+                                            ) {
+                                                Text(
+                                                    text = "${idx + 1}.  $chunk",
+                                                    fontFamily = appFont,
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    letterSpacing = 0.3.sp,
+                                                    color = colors.textPrimary
+                                                )
+                                            }
+                                        }
                                     }
-                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Spacer(modifier = Modifier.height(16.dp))
                                 }
 
-                                Text("Hasil: ${item.lstmOutput}", fontFamily = manropeFont, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                                Text(
+                                    text = "HASIL TRANSLITERASI",
+                                    fontFamily = appFont,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = colors.textSecondary,
+                                    letterSpacing = 1.2.sp
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(colors.btnPrimary, RoundedCornerShape(8.dp))
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = item.lstmOutput,
+                                        fontFamily = appFont,
+                                        fontSize = 20.sp,
+                                        fontWeight = FontWeight.Black,
+                                        letterSpacing = 0.5.sp,
+                                        color = colors.textOnPrimary,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                    )
+                                }
                             }
                         }
                     }
@@ -364,7 +546,7 @@ fun HomeScreen(
                         )
                         Text(
                             text = "${(loadingProgress * 100).toInt()}%",
-                            fontFamily = manropeFont,
+                            fontFamily = appFont,
                             color = Color.White,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
@@ -373,9 +555,146 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(
                         text = loadingText,
-                        fontFamily = manropeFont,
+                        fontFamily = appFont,
                         color = Color.LightGray,
                         fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ZOOMABLE IMAGE (VERSI FINAL - PERBAIKAN SCROLL LAYAR)
+@Composable
+fun ZoomableImage(
+    bitmap: androidx.compose.ui.graphics.ImageBitmap,
+    contentDescription: String,
+    appFont: FontFamily,
+    isHistoryCard: Boolean = false
+) {
+    var boxSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
+    var scale by remember { mutableStateOf(0f) }
+    var minScale by remember { mutableStateOf(1f) }
+    var offset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+
+    val boxModifier = if (isHistoryCard) {
+        Modifier
+            .fillMaxWidth()
+            .height(240.dp)
+            .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+            .onSizeChanged { boxSize = androidx.compose.ui.geometry.Size(it.width.toFloat(), it.height.toFloat()) }
+    } else {
+        Modifier
+            .fillMaxWidth()
+            .wrapContentHeight()
+            .heightIn(min = 180.dp, max = 450.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .onSizeChanged { boxSize = androidx.compose.ui.geometry.Size(it.width.toFloat(), it.height.toFloat()) }
+    }
+
+    Box(
+        modifier = boxModifier
+            .pointerInput(boxSize) {
+                if (boxSize == androidx.compose.ui.geometry.Size.Zero) return@pointerInput
+
+                // MENGGUNAKAN PENGHITUNG GESTURE MANUAL
+                awaitPointerEventScope {
+                    while (true) {
+                        awaitFirstDown()
+                        do {
+                            val event = awaitPointerEvent()
+                            val zoom = event.calculateZoom()
+                            val pan = event.calculatePan()
+
+                            // Cek apakah user menggunakan 2 jari (mencubit) atau gambar sedang di-zoom
+                            val isZooming = event.changes.size > 1
+                            val isZoomed = scale > minScale
+
+                            // JIKA SEDANG ZOOM/CUBIT: Tahan layar, mainkan gambar!
+                            if (isZooming || isZoomed) {
+                                // KONSUMSI EVENT: Memblokir parent agar layar tidak ikut ter-scroll
+                                event.changes.forEach { it.consume() }
+
+                                val imgW = bitmap.width.toFloat()
+                                val imgH = bitmap.height.toFloat()
+                                val fitScale = minOf(boxSize.width / imgW, boxSize.height / imgH)
+
+                                scale = (scale * zoom).coerceIn(minScale, minScale * 5f)
+
+                                // Fitur "Snap": Jika pengguna melakukan zoom out hingga mentok, langsung rapikan
+                                if (scale < minScale + 0.01f) {
+                                    scale = minScale
+                                    offset = androidx.compose.ui.geometry.Offset.Zero
+                                } else {
+                                    val dW = imgW * fitScale
+                                    val dH = imgH * fitScale
+
+                                    val maxX = maxOf(0f, (dW * scale - boxSize.width) / 2f)
+                                    val maxY = maxOf(0f, (dH * scale - boxSize.height) / 2f)
+
+                                    val newX = (offset.x + pan.x).coerceIn(-maxX, maxX)
+                                    val newY = (offset.y + pan.y).coerceIn(-maxY, maxY)
+                                    offset = androidx.compose.ui.geometry.Offset(newX, newY)
+                                }
+                            }
+                            // JIKA TIDAK DI-ZOOM (Skala = 1) dan CUMA 1 JARI:
+                            // Biarkan kosong! Event tidak akan dikonsumsi, sehingga layar utama bisa discroll dengan lancar.
+
+                        } while (event.changes.any { it.pressed })
+                    }
+                }
+            }
+    ) {
+        if (boxSize != androidx.compose.ui.geometry.Size.Zero) {
+            val imgW = bitmap.width.toFloat()
+            val imgH = bitmap.height.toFloat()
+            val fitScale = minOf(boxSize.width / imgW, boxSize.height / imgH)
+
+            if (scale == 0f) {
+                scale = 1f
+                minScale = 1f
+            }
+
+            val dW = imgW * fitScale
+            val dH = imgH * fitScale
+            val maxX = maxOf(0f, (dW * scale - boxSize.width) / 2f)
+            val maxY = maxOf(0f, (dH * scale - boxSize.height) / 2f)
+
+            offset = androidx.compose.ui.geometry.Offset(
+                offset.x.coerceIn(-maxX, maxX),
+                offset.y.coerceIn(-maxY, maxY)
+            )
+
+            Image(
+                bitmap = bitmap,
+                contentDescription = contentDescription,
+                modifier = Modifier
+                    .matchParentSize()
+                    .graphicsLayer(
+                        scaleX = scale,
+                        scaleY = scale,
+                        translationX = offset.x,
+                        translationY = offset.y
+                    ),
+                contentScale = ContentScale.Fit
+            )
+
+            if (scale <= minScale * 1.05f) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(12.dp)
+                        .background(Color(0x99000000), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "🔍",
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontFamily = appFont,
                         fontWeight = FontWeight.Medium
                     )
                 }

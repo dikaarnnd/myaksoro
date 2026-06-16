@@ -8,6 +8,7 @@ import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -26,12 +27,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.io.File
 
+// IMPORT TAMBAHAN UNTUK FITUR ZOOM
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.clip
+
 @Composable
 fun HistoryScreen(
     context: Context,
     historyList: MutableList<HistoryItem>,
     colors: AksoroColors,
-    manropeFont: FontFamily
+    appFont: FontFamily
 ) {
     var isAscending by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -42,10 +49,10 @@ fun HistoryScreen(
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             title = {
-                Text("Hapus Semua Riwayat?", fontFamily = manropeFont, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                Text("Hapus Semua Riwayat?", fontFamily = appFont, fontWeight = FontWeight.ExtraBold, color = colors.textPrimary)
             },
             text = {
-                Text("Tindakan ini tidak dapat dibatalkan dan semua gambar akan dihapus permanen dari memori HP-mu.", fontFamily = manropeFont, color = colors.textSecondary)
+                Text("Tindakan ini tidak dapat dibatalkan dan semua gambar akan dihapus permanen dari memori HP-mu.", fontFamily = appFont, color = colors.textSecondary)
             },
             confirmButton = {
                 TextButton(onClick = {
@@ -57,12 +64,12 @@ fun HistoryScreen(
                     HistoryManager.saveHistory(context, historyList)
                     showDeleteDialog = false
                 }) {
-                    Text("Hapus", color = Color(0xFFD32F2F), fontFamily = manropeFont, fontWeight = FontWeight.Bold)
+                    Text("Hapus", color = Color(0xFFD32F2F), fontFamily = appFont, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Batal", color = colors.textPrimary, fontFamily = manropeFont)
+                    Text("Batal", color = colors.textPrimary, fontFamily = appFont, fontWeight = FontWeight.Medium)
                 }
             },
             containerColor = colors.cardBg
@@ -96,7 +103,7 @@ fun HistoryScreen(
                     ) {
                         Text(
                             text = if (isAscending) "Waktu: Terdahulu" else "Waktu: Terbaru",
-                            fontFamily = manropeFont,
+                            fontFamily = appFont,
                             fontWeight = FontWeight.Bold,
                             color = colors.textOnSecondary,
                             fontSize = 12.sp
@@ -107,7 +114,6 @@ fun HistoryScreen(
                         onClick = { showDeleteDialog = true },
                         modifier = Modifier
                             .size(40.dp)
-                            // .background(Color(0x1AD32F2F), RoundedCornerShape(12.dp))
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Delete,
@@ -125,45 +131,132 @@ fun HistoryScreen(
             ) {
                 if (historyList.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize().padding(top = 64.dp), contentAlignment = Alignment.Center) {
-                        Text("Belum ada riwayat transliterasi.", fontFamily = manropeFont, color = colors.textTertiary)
+                        Text("Belum ada riwayat transliterasi.", fontFamily = appFont, fontWeight = FontWeight.Medium, color = colors.textTertiary)
                     }
                 } else {
                     displayedList.forEachIndexed { index, item ->
-                        val cardColor = if (index % 2 == 0) colors.boxHistoryPrimary else colors.boxHistorySecondary
+                        // val cardColor = if (index % 2 == 0) colors.boxHistoryPrimary else colors.boxHistorySecondary
+                        val cardColor = colors.boxHistorySecondary
 
                         Card(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
                             shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(containerColor = cardColor),
                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                         ) {
                             Column {
                                 if (item.bitmapCache != null) {
-                                    Image(
+                                    // MENGGUNAKAN KOMPONEN ZOOMABLE IMAGE
+                                    ZoomableImage(
                                         bitmap = item.bitmapCache!!.asImageBitmap(),
                                         contentDescription = "Gambar Riwayat",
-                                        modifier = Modifier.fillMaxWidth().wrapContentHeight().heightIn(max = 450.dp),
-                                        contentScale = ContentScale.FillWidth
+                                        appFont = appFont,
+                                        isHistoryCard = true
                                     )
                                 }
                                 Column(modifier = Modifier.padding(16.dp)) {
-                                    Text("Klasifikasi: ${if (item.cnnOutput.isEmpty()) "[]" else item.cnnOutput.toString()}", fontFamily = manropeFont, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textSecondary)
-                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "HASIL DETEKSI",
+                                        fontFamily = appFont,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = colors.textSecondary,
+                                        letterSpacing = 1.2.sp
+                                    )
+
+                                    if (item.cnnOutput.isEmpty()) {
+                                        Text("-", fontFamily = appFont, fontSize = 12.sp, color = colors.textPrimary, modifier = Modifier.padding(top = 4.dp))
+                                    } else {
+                                        LazyRow(
+                                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            items(item.cnnOutput.size) { idx ->
+                                                Box(
+                                                    modifier = Modifier
+                                                        .background(colors.bgApp, RoundedCornerShape(6.dp))
+                                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                                ) {
+                                                    Text(
+                                                        text = "${idx + 1}. ${item.cnnOutput[idx]}",
+                                                        fontFamily = appFont,
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        letterSpacing = 0.5.sp,
+                                                        color = colors.textPrimary
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(16.dp))
 
                                     if (item.chunkResults.isNotEmpty()) {
-                                        Text("Cara membaca:", fontFamily = manropeFont, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textSecondary)
-                                        item.chunkResults.forEachIndexed { idx, chunk ->
-                                            Text("${idx + 1}. $chunk", fontFamily = manropeFont, fontSize = 14.sp, color = colors.textPrimary)
+                                        Text(
+                                            text = "CARA MEMBACA",
+                                            fontFamily = appFont,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = colors.textSecondary,
+                                            letterSpacing = 1.2.sp
+                                        )
+                                        Column(
+                                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            item.chunkResults.forEachIndexed { idx, chunk ->
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .background(colors.bgApp, RoundedCornerShape(6.dp))
+                                                        .padding(10.dp)
+                                                ) {
+                                                    Text(
+                                                        text = "${idx + 1}.  $chunk",
+                                                        fontFamily = appFont,
+                                                        fontSize = 13.sp,
+                                                        fontWeight = FontWeight.Medium,
+                                                        letterSpacing = 0.3.sp,
+                                                        color = colors.textPrimary
+                                                    )
+                                                }
+                                            }
                                         }
-                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Spacer(modifier = Modifier.height(16.dp))
                                     }
 
-                                    Text("Hasil: ${item.lstmOutput}", fontFamily = manropeFont, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                                    Text(
+                                        text = "HASIL TRANSLITERASI",
+                                        fontFamily = appFont,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = colors.textSecondary,
+                                        letterSpacing = 1.2.sp
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(colors.btnPrimary, RoundedCornerShape(8.dp))
+                                            .padding(16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = item.lstmOutput,
+                                            fontFamily = appFont,
+                                            fontSize = 20.sp,
+                                            fontWeight = FontWeight.Black,
+                                            letterSpacing = 0.5.sp,
+                                            color = colors.textOnPrimary,
+                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                        )
+                                    }
                                 }
                             }
                         }
+                        Spacer(modifier = Modifier.height(32.dp))
                     }
-                    Spacer(modifier = Modifier.height(32.dp))
                 }
             }
         }

@@ -140,12 +140,20 @@ class AksoroEngine(private val context: Context) {
             }
 
             // --- LOG 3: TRANSLITERASI PER BATCH ---
+            var globalTokenIndex = 1
             for (i in tokenBatches.indices) {
                 val batch = tokenBatches[i]
                 val translatedChunk = translateSeq2Seq(batch)
 
+                // --- Format token dengan angka urutan ---
+                val numberedBatch = batch.map { token ->
+                    val numberedToken = "$globalTokenIndex.$token"
+                    globalTokenIndex++ // Tambah angka untuk token berikutnya
+                    numberedToken
+                }
+
                 // KODE INI YANG MENGGABUNGKAN ARRAY DAN HASILNYA!
-                chunkStrings.add("$batch: $translatedChunk")
+                chunkStrings.add("$numberedBatch: $translatedChunk")
                 Log.d("Aksoro_Debug", "Hasil Transliterasi Batch ${i + 1}: $translatedChunk")
                 translatedBuilder.append(translatedChunk)
 
@@ -319,9 +327,23 @@ class AksoroEngine(private val context: Context) {
 
         // debug visual
         val annotatedMat = originalMat.clone()
-        for (rect in mergedBoxes) {
+        for (i in mergedBoxes.indices) {
+            val rect = mergedBoxes[i]
             // Gambar kotak dengan warna Merah (R=255, G=0, B=0, Alpha=255) ketebalan 4 piksel
             Imgproc.rectangle(annotatedMat, rect.tl(), rect.br(), Scalar(255.0, 0.0, 0.0, 255.0), 4)
+
+            // --- MENGGAMBAR ANGKA URUTAN ---
+            // Mengatur posisi teks agar tidak terpotong jika kotak terlalu di atas
+            val textY = max(rect.y.toDouble() - 10.0, 30.0)
+            Imgproc.putText(
+                annotatedMat,
+                "${i + 1}", // Teks angka urutan (mulai dari 1)
+                Point(rect.x.toDouble(), textY),
+                Imgproc.FONT_HERSHEY_SIMPLEX,
+                1.5,
+                Scalar(255.0, 0.0, 0.0, 255.0), // Warna merah
+                4
+            )
         }
         // Ubah gambar yang sudah dicoret merah menjadi Bitmap
         val annotatedBmp = Bitmap.createBitmap(annotatedMat.cols(), annotatedMat.rows(), Bitmap.Config.ARGB_8888)
