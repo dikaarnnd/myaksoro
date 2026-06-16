@@ -281,7 +281,7 @@ fun HomeScreen(
                     },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = colors.btnAccent),
-                    // shape = RoundedCornerShape(24.dp)
+                    shape = RoundedCornerShape(24.dp)
                 ) {
                     Text("Mulai Transliterasi AI", fontFamily = manropeFont, fontWeight = FontWeight.Bold, color = colors.textOnPrimary)
                 }
@@ -348,7 +348,9 @@ fun HomeScreen(
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
                     modifier = Modifier
+                        .size(width = 300.dp, height = 220.dp)
                         .background(Color(0xFF222222), RoundedCornerShape(20.dp))
                         .padding(32.dp)
                 ) {

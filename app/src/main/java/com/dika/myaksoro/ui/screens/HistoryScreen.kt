@@ -83,7 +83,7 @@ fun HistoryScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 24.dp, bottom = 8.dp),
+                        .padding(top = 16.dp, bottom = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -95,7 +95,7 @@ fun HistoryScreen(
                         modifier = Modifier.height(40.dp)
                     ) {
                         Text(
-                            text = if (isAscending) "Waktu: Terlama" else "Waktu: Terbaru",
+                            text = if (isAscending) "Waktu: Terdahulu" else "Waktu: Terbaru",
                             fontFamily = manropeFont,
                             fontWeight = FontWeight.Bold,
                             color = colors.textOnSecondary,
@@ -125,14 +125,14 @@ fun HistoryScreen(
             ) {
                 if (historyList.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize().padding(top = 64.dp), contentAlignment = Alignment.Center) {
-                        Text("Belum ada riwayat translasi.", fontFamily = manropeFont, color = colors.textTertiary)
+                        Text("Belum ada riwayat transliterasi.", fontFamily = manropeFont, color = colors.textTertiary)
                     }
                 } else {
                     displayedList.forEachIndexed { index, item ->
                         val cardColor = if (index % 2 == 0) colors.boxHistoryPrimary else colors.boxHistorySecondary
 
                         Card(
-                            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                            modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(containerColor = cardColor),
                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),

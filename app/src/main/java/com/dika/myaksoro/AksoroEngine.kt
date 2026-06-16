@@ -42,7 +42,7 @@ class AksoroEngine(private val context: Context) {
 
     // Vocab Seq2Seq
     private val inputTokens = listOf(
-        "<pad>", "<sos>", "<eos>",
+        "<pad>", "<sos>", "<eos>", "<unk>",
         "a", "ba", "ca", "cecak", "da", "dha", "e", "ga", "ha", "i",
         "ja", "ka", "la", "layar", "ma", "na", "nga", "nya", "o", "pa",
         "pangkon", "pepet", "p_ba", "p_ca", "p_da", "p_dha", "p_ga", "p_ha", "p_ja", "p_ka",
@@ -114,11 +114,11 @@ class AksoroEngine(private val context: Context) {
 
         // 2. Looping potongan gambar ke PyTorch MobileNetV2
         // val cnnResults = classifyCharacters(segmentedBitmaps)
-        onProgress?.invoke(0.15f, "Mendeteksi karakter (MobileNetV2)...")
+        onProgress?.invoke(0.15f, "Mendeteksi karakter...")
         // 2. Kirim fungsi onProgress ke dalam classifyCharacters
         val cnnResults = classifyCharacters(segmentedBitmaps) { progress ->
             // Mengubah skala progress dari 0-100% milik klasifikasi menjadi porsi 15% - 50% di loading utama
-            onProgress?.invoke(0.15f + (0.35f * progress), "Mendeteksi karakter (MobileNetV2)...")
+            onProgress?.invoke(0.15f + (0.35f * progress), "Mendeteksi karakter...")
         }
 
         val chunkStrings = mutableListOf<String>()
@@ -146,12 +146,12 @@ class AksoroEngine(private val context: Context) {
 
                 // KODE INI YANG MENGGABUNGKAN ARRAY DAN HASILNYA!
                 chunkStrings.add("$batch: $translatedChunk")
-                Log.d("Aksoro_Debug", "Hasil Translasi Batch ${i + 1}: $translatedChunk")
+                Log.d("Aksoro_Debug", "Hasil Transliterasi Batch ${i + 1}: $translatedChunk")
                 translatedBuilder.append(translatedChunk)
 
                 // 3. Laporkan progress translasi setiap kali 1 batch selesai
                 val progress = (i + 1).toFloat() / tokenBatches.size
-                onProgress?.invoke(0.55f + (0.40f * progress), "Mentranslasikan ke Latin (Seq2Seq)...")
+                onProgress?.invoke(0.55f + (0.40f * progress), "Mentransliterasikan ke Latin...")
             }
 
             finalLstmString = translatedBuilder.toString()
@@ -502,11 +502,27 @@ class AksoroEngine(private val context: Context) {
     private fun encodeInput(seq: List<String>): List<Int> {
         val tokens = mutableListOf<Int>()
         tokens.add(inputVocab["<sos>"]!!)
+
         for (s in seq) {
-            tokens.add(inputVocab[s] ?: inputVocab["<pad>"]!!)
+            // Gunakan <unk> jika token tidak ditemukan di kamus
+            tokens.add(inputVocab[s] ?: inputVocab["<unk>"]!!)
         }
-        tokens.add(inputVocab["<eos>"]!!)
-        return tokens.take(MAX_INPUT_LEN)
+
+        // Standar NLP: Potong jika kepanjangan agar tersisa ruang untuk <eos>
+        val croppedTokens = if (tokens.size > MAX_INPUT_LEN - 1) {
+            tokens.take(MAX_INPUT_LEN - 1).toMutableList()
+        } else {
+            tokens
+        }
+
+        croppedTokens.add(inputVocab["<eos>"]!!)
+
+        // Standar NLP: Pad sequence secara langsung di sini agar selalu memiliki ukuran MAX_INPUT_LEN
+        while (croppedTokens.size < MAX_INPUT_LEN) {
+            croppedTokens.add(inputVocab["<pad>"]!!)
+        }
+
+        return croppedTokens
     }
 
     private fun translateSeq2Seq(inputSeq: List<String>): String {
