@@ -522,54 +522,46 @@ class AksoroEngine(private val context: Context) {
     }
 
     private fun encodeInput(seq: List<String>): List<Int> {
-        val tokens = mutableListOf<Int>()
+        var tokens = mutableListOf<Int>()
+
         tokens.add(inputVocab["<sos>"]!!)
 
+        // input token dari hasil deteksi CNN
         for (s in seq) {
-            // Gunakan <unk> jika token tidak ditemukan di kamus
             tokens.add(inputVocab[s] ?: inputVocab["<unk>"]!!)
         }
 
-        // Standar NLP: Potong jika kepanjangan agar tersisa ruang untuk <eos>
-        val croppedTokens = if (tokens.size > MAX_INPUT_LEN - 1) {
-            tokens.take(MAX_INPUT_LEN - 1).toMutableList()
-        } else {
-            tokens
+        // potong jika kepanjangan
+        tokens = tokens.take(MAX_INPUT_LEN - 1).toMutableList()
+
+        // tag <eos>
+        tokens.add(inputVocab["<eos>"]!!)
+
+        // pad sequence secara langsung
+        val padToken = inputVocab["<pad>"]!!
+        while (tokens.size < MAX_INPUT_LEN) {
+            tokens.add(padToken)
         }
 
-        croppedTokens.add(inputVocab["<eos>"]!!)
-
-        // Standar NLP: Pad sequence secara langsung di sini agar selalu memiliki ukuran MAX_INPUT_LEN
-        while (croppedTokens.size < MAX_INPUT_LEN) {
-            croppedTokens.add(inputVocab["<pad>"]!!)
-        }
-
-        return croppedTokens
+        return tokens
     }
 
     private fun translateSeq2Seq(inputSeq: List<String>): String {
         if (seq2seqModule == null || inputSeq.isEmpty()) return ""
 
-        // 1. Encoding & Padding
-        val encoded = encodeInput(inputSeq).toMutableList()
-        while (encoded.size < MAX_INPUT_LEN) {
-            encoded.add(inputVocab["<pad>"]!!)
-        }
+        // 1. Encoding
+        val encoded = encodeInput(inputSeq)
 
-        // 2. Buat LongTensor karena layer Embedding PyTorch hanya menerima tipe Int/Long
+        // 2. Buat LongTensor untuk input
         val inTensorArray = LongArray(MAX_INPUT_LEN) { encoded[it].toLong() }
         val inputTensor = org.pytorch.Tensor.fromBlob(inTensorArray, longArrayOf(1, MAX_INPUT_LEN.toLong()))
 
         // 3. Eksekusi Model (Forward Pass)
         val outputTensor = seq2seqModule!!.forward(IValue.from(inputTensor)).toTensor()
 
-        // Hasil dari TorchScript adalah Tensor Logits berdimensi [1, 20, 31 (vocab_size)]
+        // 4. Proses Decoding manual
         val logits = outputTensor.dataAsFloatArray
-        val outputVocabSize = outputTokens.size
-
-        // 4. Proses Decoding manual (Aman untuk Tensor 3D)
         val shape = outputTensor.shape()
-        // shape biasanya [1, 20, 31] (Batch, Seq_Len, Vocab_Size)
         val seqLen = shape[1].toInt()
         val vocabSize = shape[2].toInt()
 
@@ -578,10 +570,9 @@ class AksoroEngine(private val context: Context) {
         for (step in 0 until seqLen) {
             var maxVal = -Float.MAX_VALUE
             var maxIdx = -1
-
-            // Rumus offset untuk tensor 3D [1, seqLen, vocabSize]
             val stepOffset = step * vocabSize
 
+            // .argmax() manual
             for (i in 0 until vocabSize) {
                 val logit = logits[stepOffset + i]
                 if (logit > maxVal) {
@@ -590,12 +581,12 @@ class AksoroEngine(private val context: Context) {
                 }
             }
 
-            // Jika menabrak token <eos> (End of Sentence), hentikan pembacaan batch ini
+            // Jika cur == output_vocab["<eos>"]: break
             if (maxIdx == outputVocab["<eos>"]!!) {
                 break
             }
 
-            // Jika bukan token kontrol, gabungkan menjadi kata
+            // result.append(inv_output_vocab[cur])
             val char = invOutputVocab[maxIdx]
             if (char != "<sos>" && char != "<pad>") {
                 resultString.append(char)
