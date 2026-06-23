@@ -9,7 +9,6 @@ import org.opencv.core.*
 import org.opencv.imgproc.Imgproc
 import org.pytorch.IValue
 import org.pytorch.Module
-import org.pytorch.torchvision.TensorImageUtils
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.exp
@@ -17,20 +16,13 @@ import kotlin.math.max
 import kotlin.math.min
 import org.pytorch.LiteModuleLoader
 
-// Tambahkan parameter Context di constructor
 class AksoroEngine(private val context: Context) {
 
     private var cnnModule: Module? = null
     private var seq2seqModule: Module? = null
     private val MAX_INPUT_LEN = 15
-    private val MAX_OUTPUT_LEN = 2
+    private val CONFIDENCE_THRESHOLD = 0.2f
 
-    // Hyperparameter sesuai skrip Python
-    private val CONFIDENCE_THRESHOLD = 0.25f
-    private val CNN_MEAN = floatArrayOf(0.485f, 0.456f, 0.406f)
-    private val CNN_STD = floatArrayOf(0.229f, 0.224f, 0.225f)
-
-    // CATATAN PENTING: Urutan kelas ini HARUS persis sama dengan urutan saat kamu melatih model di Python
     private val classNames = arrayOf(
         "a", "ba", "ca", "cecak", "da", "dha", "e", "ga", "ha", "i",
         "ja", "ka", "la", "layar", "ma", "na", "nga", "nya", "o",
@@ -63,12 +55,12 @@ class AksoroEngine(private val context: Context) {
     private val semuaS = sVokal + sSigeg + setOf("taling", "pangkon")
 
     init {
-        // 1. Muat OpenCV
+        // 1. OpenCV
         if (!OpenCVLoader.initDebug()) {
             Log.e("AksoroEngine", "OpenCV gagal dimuat!")
         }
 
-        // 2. Muat Model PyTorch (MobileNetV2)
+        // 2. Model PyTorch (MobileNetV2)
         try {
             val cnnPath = assetFilePath(context, "mobilenetv2_aksoro_final.ptl")
             val seq2seqPath = assetFilePath(context, "seq2seq_aksoro_final.ptl")
@@ -432,7 +424,7 @@ class AksoroEngine(private val context: Context) {
                         }
                         // Hanya gabungkan jika tumpang tindih sedang (0.10 - 0.60)
                         else if (overlapRatio >= 0.10 && overlapRatio <= 0.60) {
-                            if (newW < (medianW * 2.8)) {
+                            if (newW < (medianW * 2)) {
                                 rect1 = Rect(newX, newY, newW, newH)
                                 used[j] = true
                                 mergedInThisPass = true
@@ -563,7 +555,7 @@ class AksoroEngine(private val context: Context) {
         val logits = outputTensor.dataAsFloatArray
         val shape = outputTensor.shape()
         val seqLen = shape[1].toInt()
-        val vocabSize = shape[2].toInt()
+        val vocabSize = shape[2].toInt() // Max Output Length
 
         val resultString = java.lang.StringBuilder()
 
