@@ -287,8 +287,11 @@ class AksoroEngine(private val context: Context) {
         val originalMat = Mat()
         Utils.bitmapToMat(bitmap, originalMat)
 
+        // 1. Konversi ke Grayscale
         val gray = Mat()
         Imgproc.cvtColor(originalMat, gray, Imgproc.COLOR_RGBA2GRAY)
+
+        // 2. Gaussian Blur
         val blur = Mat()
         Imgproc.GaussianBlur(gray, blur, Size(5.0, 5.0), 0.0)
 
