@@ -1,4 +1,4 @@
-# AksaGo - Aplikasi Transliterasi Aksara Jawa 📜
+# Aksoro - Aplikasi Transliterasi Aksara Jawa 📜
 
 [![Platform](https://img.shields.io/badge/Platform-Android_Native-3DDC84?logo=android&logoColor=white)](https://www.android.com/)
 [![Kotlin](https://img.shields.io/badge/Language-Kotlin-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org/)
@@ -6,7 +6,7 @@
 [![AI](https://img.shields.io/badge/AI_Engine-PyTorch_Mobile-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/mobile/home/)
 [![CV](https://img.shields.io/badge/Vision-OpenCV_SDK-5C3EE8?logo=opencv&logoColor=white)](https://opencv.org/)
 
-AksaGo adalah aplikasi *mobile* Android *native* yang dirancang untuk menerjemahkan citra Aksara Jawa ke teks Latin secara *end-to-end*. Proyek ini dikembangkan sebagai implementasi Tugas Akhir (Skripsi) pada Program Studi Informatika, Universitas Pembangunan Jaya, guna memfasilitasi pelestarian aksara tradisional melalui teknologi *Artificial Intelligence*.
+Aksoro adalah aplikasi *mobile* Android *native* yang dirancang untuk menerjemahkan citra Aksara Jawa ke teks Latin secara *end-to-end*. Proyek ini dikembangkan sebagai implementasi Tugas Akhir (Skripsi) pada Program Studi Informatika, Universitas Pembangunan Jaya, guna memfasilitasi pelestarian aksara tradisional melalui teknologi *Artificial Intelligence*.
 
 Sistem ini beroperasi dengan memadukan pengolahan citra (*Computer Vision*) dan *Deep Learning*, menggunakan arsitektur *hybrid* **MobileNetV2** (klasifikasi karakter) dan **Seq2Seq LSTM** (transliterasi bahasa). Seluruh proses inferensi berjalan langsung di dalam perangkat (*On-Device/Native Engine*).
 
@@ -24,7 +24,7 @@ Sistem ini beroperasi dengan memadukan pengolahan citra (*Computer Vision*) dan 
 
 ## 🚀 Fitur & Alur Kerja Sistem (Pipeline)
 
-Sistem `AksaGoEngine` memproses masukan gambar hingga menjadi teks melalui tahapan berikut:
+Sistem `AksoroEngine` memproses masukan gambar hingga menjadi teks melalui tahapan berikut:
 
 1. **Pengambilan & Pemotongan Gambar:**
    Menggunakan integrasi kamera/galeri yang langsung dihubungkan dengan fitur *cropping* bergaris bantu (guidelines) untuk memfokuskan citra pada teks.
@@ -53,7 +53,7 @@ Sistem `AksaGoEngine` memproses masukan gambar hingga menjadi teks melalui tahap
 ### Langkah-langkah:
 1. **Clone repositori:**
    ```bash
-   git clone https://github.com/username/aksago.git
+   git clone https://github.com/dikaarnnd/myaksoro.git
    ```
 2. **Impor Modul OpenCV:**
    Pastikan modul OpenCV (versi lokal) telah terhubung. Cek berkas `build.gradle (Module :opencv)` dan pastikan `compileSdkVersion` & `targetSdkVersion` diatur ke **36**, dan `minSdkVersion` ke **24**.
@@ -71,7 +71,7 @@ Sistem `AksaGoEngine` memproses masukan gambar hingga menjadi teks melalui tahap
 Untuk pengembang yang ingin melatih ulang model, perhatikan penyesuaian (*troubleshooting*) berikut saat mengekspor model PyTorch ke format Mobile (`.ptl`):
 
 - **Menghindari Korupsi Bobot MobileNetV2:**
-  Lewati pemanggilan fungsi `optimize_for_mobile()` pada skrip konverter `ptl_converter.py`. Lakukan ekspor langsung menggunakan *Traced Model* (`_save_for_lite_interpreter`). Hal ini menjaga struktur fusi `Conv2d` dan `BatchNorm`, sehingga akurasi *on-device* tetap setara dengan pengujian di *environment* Python.
+  Lewati pemanggilan fungsi `optimize_for_mobile()` pada skrip konversi yang dikonfigurasi secara mandiri saat mengekspor model. Lakukan ekspor langsung menggunakan *Traced Model* (`_save_for_lite_interpreter`). Hal ini menjaga struktur fusi `Conv2d` dan `BatchNorm`, sehingga akurasi *on-device* tetap setara dengan pengujian di *environment* Python.
 - **Keselarasan Pemetaan Kelas:**
   Pastikan *array classNames* di Kotlin disusun murni alfabetis (A-Z), mengikuti sifat *default* pustaka `ImageFolder` saat fase pelatihan.
 - **Ekspor Seq2Seq LSTM:**
