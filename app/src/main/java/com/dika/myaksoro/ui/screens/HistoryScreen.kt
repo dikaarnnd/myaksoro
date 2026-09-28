@@ -1,37 +1,47 @@
 package com.dika.myaksoro.ui.screens
 
-import com.dika.myaksoro.data.HistoryItem
-import com.dika.myaksoro.data.HistoryManager
-import com.dika.myaksoro.ui.theme.AksoroColors
-
+// --- Java & Android Framework ---
 import android.content.Context
-import androidx.compose.foundation.Image
+import java.io.File
+
+// --- Jetpack Compose: Layout & Foundation ---
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+
+// --- Jetpack Compose: Material 3 ---
+import androidx.compose.material3.Text
+
+// --- Jetpack Compose: Runtime & State Management ---
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+
+// --- Jetpack Compose: UI, Modifier, Font & Units ---
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import java.io.File
 
-// IMPORT TAMBAHAN UNTUK FITUR ZOOM
-import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.draw.clip
+// --- Proyek Internal: Data Layer ---
+import com.dika.myaksoro.data.HistoryItem
+import com.dika.myaksoro.data.HistoryManager
+
+// --- Proyek Internal: Custom Components ---
+import com.dika.myaksoro.ui.components.DeleteHistoryDialog
+import com.dika.myaksoro.ui.components.HistoryCard
+
+// --- Proyek Internal: Theme ---
+import com.dika.myaksoro.ui.theme.AksoroColors
 
 @Composable
 fun HistoryScreen(
@@ -46,33 +56,19 @@ fun HistoryScreen(
     val displayedList = if (isAscending) historyList.reversed() else historyList.toList()
 
     if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = {
-                Text("Hapus Semua Riwayat?", fontFamily = appFont, fontWeight = FontWeight.ExtraBold, color = colors.textPrimary)
-            },
-            text = {
-                Text("Tindakan ini tidak dapat dibatalkan dan semua gambar akan dihapus permanen dari memori HP-mu.", fontFamily = appFont, color = colors.textSecondary)
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    historyList.forEach {
-                        val file = File(it.imagePath)
-                        if (file.exists()) file.delete()
-                    }
-                    historyList.clear()
-                    HistoryManager.saveHistory(context, historyList)
-                    showDeleteDialog = false
-                }) {
-                    Text("Hapus", color = Color(0xFFD32F2F), fontFamily = appFont, fontWeight = FontWeight.Bold)
+        DeleteHistoryDialog(
+            colors = colors,
+            appFont = appFont,
+            onConfirm = {
+                historyList.forEach {
+                    val file = File(it.imagePath)
+                    if (file.exists()) file.delete()
                 }
+                historyList.clear()
+                HistoryManager.saveHistory(context, historyList)
+                showDeleteDialog = false
             },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Batal", color = colors.textPrimary, fontFamily = appFont, fontWeight = FontWeight.Medium)
-                }
-            },
-            containerColor = colors.cardBg
+            onDismiss = { showDeleteDialog = false }
         )
     }
 
@@ -87,41 +83,13 @@ fun HistoryScreen(
                 .padding(horizontal = 24.dp)
         ) {
             if (historyList.isNotEmpty()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp, bottom = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Button(
-                        onClick = { isAscending = !isAscending },
-                        colors = ButtonDefaults.buttonColors(containerColor = colors.btnSecondary),
-                        shape = RoundedCornerShape(12.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        modifier = Modifier.height(40.dp)
-                    ) {
-                        Text(
-                            text = if (isAscending) "Waktu: Terdahulu" else "Waktu: Terbaru",
-                            fontFamily = appFont,
-                            fontWeight = FontWeight.Bold,
-                            color = colors.textOnSecondary,
-                            fontSize = 12.sp
-                        )
-                    }
-
-                    IconButton(
-                        onClick = { showDeleteDialog = true },
-                        modifier = Modifier
-                            .size(40.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Delete,
-                            contentDescription = "Hapus Semua",
-                            tint = Color(0xFFD32F2F)
-                        )
-                    }
-                }
+                HistoryToolbar(
+                    isAscending = isAscending,
+                    colors = colors,
+                    appFont = appFont,
+                    onToggleSort = { isAscending = !isAscending },
+                    onDeleteAll = { showDeleteDialog = true }
+                )
             }
 
             Column(
@@ -130,131 +98,20 @@ fun HistoryScreen(
                     .verticalScroll(rememberScrollState())
             ) {
                 if (historyList.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize().padding(top = 64.dp), contentAlignment = Alignment.Center) {
-                        Text("Belum ada riwayat transliterasi.", fontFamily = appFont, fontWeight = FontWeight.Medium, color = colors.textTertiary)
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(top = 64.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "Belum ada riwayat transliterasi.",
+                            fontFamily = appFont,
+                            fontWeight = FontWeight.Medium,
+                            color = colors.textTertiary
+                        )
                     }
                 } else {
-                    displayedList.forEachIndexed { index, item ->
-                        // val cardColor = if (index % 2 == 0) colors.boxHistoryPrimary else colors.boxHistorySecondary
-                        val cardColor = colors.boxHistorySecondary
-
-                        Card(
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = cardColor),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                        ) {
-                            Column {
-                                if (item.bitmapCache != null) {
-                                    // MENGGUNAKAN KOMPONEN ZOOMABLE IMAGE
-                                    ZoomableImage(
-                                        bitmap = item.bitmapCache!!.asImageBitmap(),
-                                        contentDescription = "Gambar Riwayat",
-                                        appFont = appFont,
-                                        isHistoryCard = true
-                                    )
-                                }
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Text(
-                                        text = "HASIL DETEKSI",
-                                        fontFamily = appFont,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = colors.textSecondary,
-                                        letterSpacing = 1.2.sp
-                                    )
-
-                                    if (item.cnnOutput.isEmpty()) {
-                                        Text("-", fontFamily = appFont, fontSize = 12.sp, color = colors.textPrimary, modifier = Modifier.padding(top = 4.dp))
-                                    } else {
-                                        LazyRow(
-                                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                        ) {
-                                            items(item.cnnOutput.size) { idx ->
-                                                Box(
-                                                    modifier = Modifier
-                                                        .background(colors.bgApp, RoundedCornerShape(6.dp))
-                                                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                                                ) {
-                                                    Text(
-                                                        text = "${idx + 1}. ${item.cnnOutput[idx]}",
-                                                        fontFamily = appFont,
-                                                        fontSize = 12.sp,
-                                                        fontWeight = FontWeight.SemiBold,
-                                                        letterSpacing = 0.5.sp,
-                                                        color = colors.textPrimary
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                    Spacer(modifier = Modifier.height(16.dp))
-
-                                    if (item.chunkResults.isNotEmpty()) {
-                                        Text(
-                                            text = "CARA MEMBACA",
-                                            fontFamily = appFont,
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            color = colors.textSecondary,
-                                            letterSpacing = 1.2.sp
-                                        )
-                                        Column(
-                                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                                        ) {
-                                            item.chunkResults.forEachIndexed { idx, chunk ->
-                                                Box(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .background(colors.bgApp, RoundedCornerShape(6.dp))
-                                                        .padding(10.dp)
-                                                ) {
-                                                    Text(
-                                                        text = "${idx + 1}.  $chunk",
-                                                        fontFamily = appFont,
-                                                        fontSize = 13.sp,
-                                                        fontWeight = FontWeight.Medium,
-                                                        letterSpacing = 0.3.sp,
-                                                        color = colors.textPrimary
-                                                    )
-                                                }
-                                            }
-                                        }
-                                        Spacer(modifier = Modifier.height(16.dp))
-                                    }
-
-                                    Text(
-                                        text = "HASIL TRANSLITERASI",
-                                        fontFamily = appFont,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = colors.textSecondary,
-                                        letterSpacing = 1.2.sp
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .background(colors.btnPrimary, RoundedCornerShape(8.dp))
-                                            .padding(16.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = item.lstmOutput,
-                                            fontFamily = appFont,
-                                            fontSize = 20.sp,
-                                            fontWeight = FontWeight.Black,
-                                            letterSpacing = 0.5.sp,
-                                            color = colors.textOnPrimary,
-                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                        )
-                                    }
-                                }
-                            }
-                        }
+                    displayedList.forEach { item ->
+                        HistoryCard(item = item, colors = colors, appFont = appFont)
                         Spacer(modifier = Modifier.height(32.dp))
                     }
                 }
