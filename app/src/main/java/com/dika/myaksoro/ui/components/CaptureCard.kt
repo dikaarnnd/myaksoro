@@ -40,16 +40,18 @@ fun CaptureCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 24.dp)
+            .padding(horizontal = 24.dp)
             .wrapContentHeight()
-            .heightIn(max = 450.dp),
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, colors.btnAccent),
+            .heightIn(max = 180.dp),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = colors.cardBg)
     ) {
         if (bitmap != null) {
             ZoomableImage(
                 bitmap = bitmap.asImageBitmap(),
                 contentDescription = "Preview Gambar",
+                colors = colors,
                 appFont = appFont,
                 isHistoryCard = false
             )

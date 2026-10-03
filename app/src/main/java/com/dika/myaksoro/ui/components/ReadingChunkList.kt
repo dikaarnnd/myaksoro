@@ -2,6 +2,7 @@ package com.dika.myaksoro.ui.components
 
 // --- Jetpack Compose: Foundation & Layout ---
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 // --- Proyek Internal: Theme ---
@@ -29,6 +31,17 @@ fun ReadingChunkList(
     appFont: FontFamily,
     style: ResultStyle
 ) {
+    if (chunks.isEmpty()) {
+        Text(
+            text = "-",
+            fontFamily = appFont,
+            fontSize = style.chunkFont,
+            color = colors.textPrimary,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+        return
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth().padding(top = style.listTopPad),
         verticalArrangement = Arrangement.spacedBy(style.chunkGap)
@@ -37,7 +50,8 @@ fun ReadingChunkList(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(colors.bgApp, RoundedCornerShape(style.chunkRadius))
+                    .background(colors.cardBg, RoundedCornerShape(style.chunkRadius))
+                    .border(1.dp, colors.textTertiary.copy(alpha = 0.5f), RoundedCornerShape(style.chunkRadius))
                     .padding(style.chunkPad)
             ) {
                 Text(
@@ -45,7 +59,7 @@ fun ReadingChunkList(
                     fontFamily = appFont,
                     fontSize = style.chunkFont,
                     fontWeight = FontWeight.Medium,
-                    letterSpacing = 0.3.sp,
+                    letterSpacing = 1.2.sp,
                     lineHeight = style.chunkLineHeight,
                     color = colors.textPrimary
                 )

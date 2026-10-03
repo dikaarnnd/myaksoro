@@ -14,10 +14,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.sp
 
 // --- Proyek Internal: Theme ---
 import com.dika.myaksoro.ui.theme.AksoroColors
@@ -32,7 +32,7 @@ fun TransliterationResultBox(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(colors.btnPrimary, RoundedCornerShape(style.resultRadius))
+            .background(Color(0xFF302018), RoundedCornerShape(style.resultRadius))
             .padding(vertical = style.resultPadV, horizontal = style.resultPadH),
         contentAlignment = Alignment.Center
     ) {
@@ -40,9 +40,8 @@ fun TransliterationResultBox(
             text = text,
             fontFamily = appFont,
             fontSize = style.resultFont,
-            fontWeight = FontWeight.Black,
-            letterSpacing = 0.5.sp,
-            color = colors.textOnPrimary,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
             textAlign = TextAlign.Center
         )
     }

@@ -39,6 +39,8 @@ class HomeState {
     var cnnResult by androidx.compose.runtime.mutableStateOf<List<String>>(emptyList())
     var chunkResult by androidx.compose.runtime.mutableStateOf<List<String>>(emptyList())
     var lstmResult by androidx.compose.runtime.mutableStateOf("...")
+    var precisionResult by androidx.compose.runtime.mutableStateOf("")
+    var datetimeResult by androidx.compose.runtime.mutableStateOf("")
     var showProcessButton by androidx.compose.runtime.mutableStateOf(false)
     var isInferencing by androidx.compose.runtime.mutableStateOf(false)
 }
@@ -52,12 +54,12 @@ fun AksoroNavHost(
     colors: AksoroColors,
     appFont: FontFamily,
     historyList: MutableList<HistoryItem>,
-    homeState: HomeState
+    homeState: HomeState,
 ) {
     NavHost(
         navController = navController,
         startDestination = "home",
-        modifier = Modifier.padding(paddingValues)
+        modifier = Modifier.padding(paddingValues),
     ) {
         composable("home") {
             HomeScreen(
@@ -73,11 +75,15 @@ fun AksoroNavHost(
                 onChunkResultChange = { homeState.chunkResult = it },
                 lstmResult = homeState.lstmResult,
                 onLstmResultChange = { homeState.lstmResult = it },
+                precisionResult = homeState.precisionResult,
+                onPrecisionResultChange = { homeState.precisionResult = it },
+                datetimeResult = homeState.datetimeResult,
+                onDatetimeResultChange = { homeState.datetimeResult = it },
                 showProcessButton = homeState.showProcessButton,
                 onShowProcessButtonChange = { homeState.showProcessButton = it },
                 isInferencing = homeState.isInferencing,
                 onInferencingChange = { homeState.isInferencing = it },
-                appFont = appFont
+                appFont = appFont,
             )
         }
         composable("history") {
@@ -85,7 +91,7 @@ fun AksoroNavHost(
                 context = context,
                 historyList = historyList,
                 colors = colors,
-                appFont = appFont
+                appFont = appFont,
             )
         }
     }

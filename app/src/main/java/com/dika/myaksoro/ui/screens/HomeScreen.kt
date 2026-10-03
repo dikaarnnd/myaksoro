@@ -10,17 +10,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-
-// --- Jetpack Compose: Material 3 (Komponen UI Bawaan) ---
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Text
 
 // --- Jetpack Compose: Runtime & State Management ---
 import androidx.compose.runtime.Composable
@@ -34,15 +26,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 // --- Kotlin Coroutines (Async Tasks) ---
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import kotlin.math.roundToInt
 
 // --- Proyek Internal: Engine & Data Layer ---
 import com.dika.myaksoro.AksoroEngine
@@ -73,11 +68,15 @@ fun HomeScreen(
     onChunkResultChange: (List<String>) -> Unit,
     lstmResult: String,
     onLstmResultChange: (String) -> Unit,
+    precisionResult: String,
+    onPrecisionResultChange: (String) -> Unit,
+    datetimeResult: String,
+    onDatetimeResultChange: (String) -> Unit,
     showProcessButton: Boolean,
     onShowProcessButtonChange: (Boolean) -> Unit,
     isInferencing: Boolean,
     onInferencingChange: (Boolean) -> Unit,
-    appFont: FontFamily
+    appFont: FontFamily,
 ) {
     val coroutineScope = rememberCoroutineScope()
 
@@ -107,17 +106,28 @@ fun HomeScreen(
             delay(400)
 
             val debugImg = engineResult.debugImage ?: bitmap
+
+            val precisionFormatted = "${(engineResult.avgPrecision * 100).roundToInt()}%"
+
+            val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            val dateFormatted = dateFormat.format(Date())
+
             onSelectedBitmapChange(debugImg)
             onCnnResultChange(engineResult.cnnOutput)
             onChunkResultChange(engineResult.chunkResults)
             onLstmResultChange(engineResult.lstmOutput)
+
+            onPrecisionResultChange(precisionFormatted)
+            onDatetimeResultChange(dateFormatted)
 
             val newItem = HistoryItem(
                 imagePath = savedPath,
                 cnnOutput = engineResult.cnnOutput,
                 chunkResults = engineResult.chunkResults,
                 lstmOutput = engineResult.lstmOutput,
-                bitmapCache = debugImg
+                bitmapCache = debugImg,
+                precision = precisionFormatted,
+                datetime = dateFormatted
             )
             historyList.add(0, newItem)
             HistoryManager.saveHistory(context, historyList)
@@ -134,7 +144,6 @@ fun HomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp)
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -151,8 +160,12 @@ fun HomeScreen(
                     onCnnResultChange(emptyList())
                     onChunkResultChange(emptyList())
                     onLstmResultChange("...")
+                    onPrecisionResultChange("")
+                    onDatetimeResultChange("")
                     onShowProcessButtonChange(true)
-                }
+                },
+                onProcessClick = { runTransliteration() },
+                isProcessEnabled = showProcessButton && !isInferencing && selectedBitmap != null
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -161,28 +174,11 @@ fun HomeScreen(
                 cnnResult = cnnResult,
                 chunkResult = chunkResult,
                 lstmResult = lstmResult,
+                precision = precisionResult,
+                datetime = datetimeResult,
                 colors = colors,
                 appFont = appFont
             )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (showProcessButton) {
-                Button(
-                    onClick = { runTransliteration() },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = colors.btnAccent),
-                    shape = RoundedCornerShape(24.dp)
-                ) {
-                    Text(
-                        "Mulai Transliterasi",
-                        fontFamily = appFont,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp,
-                        color = colors.textOnPrimary
-                    )
-                }
-            }
 
             Spacer(modifier = Modifier.height(32.dp))
 

@@ -1,11 +1,11 @@
 package com.dika.myaksoro.ui.screens
 
 // --- Jetpack Compose: Foundation & Layout ---
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 // --- Jetpack Compose: Material Icons ---
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FilterList
 
 // --- Jetpack Compose: Material 3 ---
 import androidx.compose.material3.Button
@@ -40,28 +41,43 @@ fun HistoryToolbar(
     colors: AksoroColors,
     appFont: FontFamily,
     onToggleSort: () -> Unit,
-    onDeleteAll: () -> Unit
+    onDeleteAll: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 16.dp, bottom = 16.dp),
+            .background(Color.Transparent)
+            .padding(top = 8.dp, bottom = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Button(
             onClick = onToggleSort,
             colors = ButtonDefaults.buttonColors(containerColor = colors.btnSecondary),
-            shape = RoundedCornerShape(12.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            modifier = Modifier.height(40.dp)
+            shape = RoundedCornerShape(16.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 2.dp),
         ) {
+            Icon(
+                imageVector = Icons.Filled.FilterList,
+                contentDescription = "Filter Urutan",
+                tint = Color(0xFFD32F2F),
+                modifier = Modifier.padding(end = 4.dp).size(18.dp)
+            )
             Text(
-                text = if (isAscending) "Waktu: Terdahulu" else "Waktu: Terbaru",
+                text = "Urutkan: ",
                 fontFamily = appFont,
                 fontWeight = FontWeight.Bold,
                 color = colors.textOnSecondary,
-                fontSize = 12.sp
+                fontSize = 12.sp,
+                letterSpacing = 1.sp
+            )
+            Text(
+                text = if (isAscending) "Terdahulu" else "Terbaru",
+                fontFamily = appFont,
+                fontWeight = FontWeight.Normal,
+                color = colors.textOnSecondary,
+                fontSize = 12.sp,
+                letterSpacing = 1.sp
             )
         }
 

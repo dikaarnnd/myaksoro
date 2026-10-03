@@ -12,7 +12,9 @@ data class HistoryItem(
     val cnnOutput: List<String>,
     val chunkResults: List<String>,
     val lstmOutput: String,
-    var bitmapCache: Bitmap? = null
+    var bitmapCache: Bitmap? = null,
+    val precision: String = "",
+    val datetime: String = "",
 )
 
 object HistoryManager {
@@ -37,6 +39,8 @@ object HistoryManager {
                 put("cnnOutput", item.cnnOutput.joinToString(","))
                 put("chunkResults", JSONArray(item.chunkResults).toString())
                 put("lstmOutput", item.lstmOutput)
+                put("precision", item.precision)
+                put("datetime", item.datetime)
             }
             jsonArray.put(jsonObj)
         }
@@ -55,15 +59,26 @@ object HistoryManager {
                 val cnnOutputString = jsonObj.getString("cnnOutput")
                 val cnnOutput = if (cnnOutputString.isNotEmpty()) cnnOutputString.split(",") else emptyList()
                 val lstmOutput = jsonObj.getString("lstmOutput")
+                val precision = jsonObj.optString("precision", "")
+                val datetime = jsonObj.optString("datetime", "")
 
                 val chunkArrayStr = jsonObj.optString("chunkResults", "[]")
                 val chunkArray = JSONArray(chunkArrayStr)
                 val chunks = mutableListOf<String>()
-                for(j in 0 until chunkArray.length()) {
+                for (j in 0 until chunkArray.length()) {
                     chunks.add(chunkArray.getString(j))
                 }
 
-                historyList.add(HistoryItem(imagePath, cnnOutput, chunks, lstmOutput))
+                historyList.add(
+                    HistoryItem(
+                        imagePath = imagePath,
+                        cnnOutput = cnnOutput,
+                        chunkResults = chunks,
+                        lstmOutput = lstmOutput,
+                        precision = precision,
+                        datetime = datetime
+                    )
+                )
             }
         } catch (e: Exception) {
             e.printStackTrace()

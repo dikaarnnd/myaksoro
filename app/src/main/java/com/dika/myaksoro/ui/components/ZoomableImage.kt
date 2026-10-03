@@ -11,11 +11,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 
 // --- Jetpack Compose: Material 3 ---
 import androidx.compose.material3.Text
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ZoomIn
 
 // --- Jetpack Compose: Runtime & State Management ---
 import androidx.compose.runtime.Composable
@@ -41,11 +45,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+// --- Proyek Internal: Theme ---
+import com.dika.myaksoro.ui.theme.AksoroColors
+
 @Composable
 fun ZoomableImage(
     bitmap: ImageBitmap,
     contentDescription: String,
     appFont: FontFamily,
+    colors: AksoroColors,
     isHistoryCard: Boolean = false
 ) {
     var boxSize by remember { mutableStateOf(Size.Zero) }
@@ -151,16 +159,14 @@ fun ZoomableImage(
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(12.dp)
-                        .background(Color(0x99000000), RoundedCornerShape(8.dp))
+                        .padding(8.dp)
                         .padding(horizontal = 8.dp, vertical = 6.dp)
                 ) {
-                    Text(
-                        text = "🔍",
-                        color = Color.White,
-                        fontSize = 11.sp,
-                        fontFamily = appFont,
-                        fontWeight = FontWeight.Medium
+                    Icon(
+                        imageVector = Icons.Filled.ZoomIn,
+                        contentDescription = "Zoom In Indicator",
+                        tint = colors.btnAccent,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }

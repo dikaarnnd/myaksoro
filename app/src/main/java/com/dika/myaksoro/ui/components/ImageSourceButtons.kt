@@ -19,18 +19,26 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 
 // --- Jetpack Compose: Material 3 ---
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material3.Icon
 
 // --- Jetpack Compose: Runtime & UI ---
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -48,7 +56,9 @@ fun ImageSourceButtons(
     context: Context,
     colors: AksoroColors,
     appFont: FontFamily,
-    onImagePicked: (Bitmap) -> Unit
+    onImagePicked: (Bitmap) -> Unit,
+    onProcessClick: () -> Unit,
+    isProcessEnabled: Boolean,
 ) {
     val cropImageLauncher = rememberLauncherForActivityResult(CropImageContract()) { result ->
         if (result.isSuccessful) {
@@ -101,9 +111,11 @@ fun ImageSourceButtons(
     }
 
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        // 1. Button Ambil Gambar (Camera)
         Button(
             onClick = {
                 val hasPermission = ContextCompat.checkSelfPermission(
@@ -112,31 +124,59 @@ fun ImageSourceButtons(
                 if (hasPermission) launchCamera()
                 else cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
             },
-            modifier = Modifier.weight(1f).height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = colors.btnPrimary),
-            shape = RoundedCornerShape(24.dp)
+            modifier = Modifier.height(56.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = colors.btnAccent,
+                contentColor = colors.cardBg
+            ),
+            shape = RoundedCornerShape(16.dp),
+            contentPadding = PaddingValues(0.dp)
         ) {
-            Text(
-                "Ambil",
-                fontFamily = appFont,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp,
-                color = colors.textOnPrimary
+            Icon(
+                imageVector = Icons.Filled.AddAPhoto,
+                contentDescription = "Ambil Gambar"
             )
         }
 
+        // 2. Button Unggah Gambar (Gallery)
         Button(
             onClick = { launchGallery() },
-            modifier = Modifier.weight(1f).height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = colors.btnSecondary),
-            shape = RoundedCornerShape(24.dp)
+            modifier = Modifier.height(56.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = colors.cardBg,
+                contentColor = colors.btnAccent
+            ),
+            shape = RoundedCornerShape(16.dp),
+            contentPadding = PaddingValues(0.dp),
+            border = BorderStroke(1.dp, colors.btnAccent)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.AddPhotoAlternate,
+                contentDescription = "Unggah Gambar"
+            )
+        }
+
+        // 3. Button Mulai Transliterasi
+        Button(
+            onClick = onProcessClick,
+            modifier = Modifier
+                .weight(1f) // Memenuhi sisa ruang di kanan
+                .height(56.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = colors.btnPrimary,
+                disabledContainerColor = colors.btnPrimary.copy(alpha = 0.5f),
+                disabledContentColor = colors.textOnPrimary.copy(alpha = 0.5f)
+            ),
+            shape = RoundedCornerShape(16.dp),
+            enabled = isProcessEnabled
         ) {
             Text(
-                "Unggah Foto",
+                text = "Mulai Transliterasi",
                 fontFamily = appFont,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp,
-                color = colors.textOnSecondary
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 12.sp,
+                letterSpacing = 1.2.sp,
+                color = if (isProcessEnabled) colors.textOnPrimary else colors.textOnPrimary.copy(alpha = 0.5f)
             )
         }
     }

@@ -108,7 +108,7 @@ class AksoroEngine(private val context: Context) {
         // val cnnResults = classifyCharacters(segmentedBitmaps)
         onProgress?.invoke(0.15f, "Mendeteksi karakter...")
         // 2. Kirim fungsi onProgress ke dalam classifyCharacters
-        val cnnResults = classifyCharacters(segmentedBitmaps) { progress ->
+        val (cnnResults, avgPrecision) = classifyCharacters(segmentedBitmaps) { progress ->
             // Mengubah skala progress dari 0-100% milik klasifikasi menjadi porsi 15% - 50% di loading utama
             onProgress?.invoke(0.15f + (0.35f * progress), "Mendeteksi karakter...")
         }
@@ -166,16 +166,18 @@ class AksoroEngine(private val context: Context) {
             cnnOutput = cnnResults,
             chunkResults = chunkStrings,
             lstmOutput = finalLstmString,
-            debugImage = annotatedBmp
+            avgPrecision = avgPrecision,
+            debugImage = annotatedBmp,
         )
     }
 
     // ==============================================================================
     // FUNGSI INFERENSI PYTORCH (MobileNetV2)
     // ==============================================================================
-    private fun classifyCharacters(charBitmaps: List<Bitmap>, onProgress: ((Float) -> Unit)? = null): List<String> {
+    private fun classifyCharacters(charBitmaps: List<Bitmap>, onProgress: ((Float) -> Unit)? = null): Pair<List<String>, Float> {
         val results = mutableListOf<String>()
-        if (cnnModule == null || charBitmaps.isEmpty()) return results
+        var totalProb = 0f
+        if (cnnModule == null || charBitmaps.isEmpty()) return Pair(results, 0f)
 
         for (i in charBitmaps.indices) {
             val bitmap = charBitmaps[i]
@@ -252,6 +254,7 @@ class AksoroEngine(private val context: Context) {
             // 5. Filter dengan Threshold
             if (maxProb >= CONFIDENCE_THRESHOLD && maxIdx < classNames.size) {
                 results.add(classNames[maxIdx])
+                totalProb += maxProb
             } else {
                 Log.d("Aksoro", "Tebakan dibuang karena confidence di bawah ambang batas (0.25)")
             }
@@ -259,7 +262,8 @@ class AksoroEngine(private val context: Context) {
             // === LAPORKAN PROGRESS PER KARAKTER KE FUNGSI UTAMA ===
             onProgress?.invoke((i + 1).toFloat() / charBitmaps.size)
         }
-        return results
+        val avgProb = if (results.isNotEmpty()) totalProb / results.size else 0f
+        return Pair(results, avgProb)
     }
 
     private fun calculateSoftmax(logits: FloatArray): FloatArray {
@@ -595,6 +599,7 @@ class AksoroEngine(private val context: Context) {
         val cnnOutput: List<String>,
         val chunkResults: List<String>,
         val lstmOutput: String,
+        val avgPrecision: Float,
         val debugImage: Bitmap? = null,
     )
 }

@@ -2,6 +2,7 @@ package com.dika.myaksoro.ui.components
 
 // --- Jetpack Compose: Foundation & Layout ---
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +15,7 @@ import androidx.compose.material3.Text
 
 // --- Jetpack Compose: Runtime & UI ---
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -48,15 +50,17 @@ fun DetectionChips(
         items(items.size) { idx ->
             Box(
                 modifier = Modifier
-                    .background(colors.bgApp, RoundedCornerShape(style.chipRadius))
-                    .padding(horizontal = style.chipPadH, vertical = style.chipPadV)
+                    .background(colors.cardBg, RoundedCornerShape(style.chipRadius))
+                    .border(1.dp, colors.textTertiary.copy(alpha = 0.5f), RoundedCornerShape(style.chipRadius))
+                    .padding(horizontal = style.chipPadH, vertical = style.chipPadV),
+                contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "${idx + 1}. ${items[idx]}",
                     fontFamily = appFont,
                     fontSize = style.chipFont,
                     fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 0.5.sp,
+                    letterSpacing = 1.2.sp,
                     color = colors.textPrimary
                 )
             }
