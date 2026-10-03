@@ -1,84 +1,214 @@
-# Aksoro - Aplikasi Transliterasi Aksara Jawa 📜
+# My Aksoro - On-Device Javanese Script Transliteration Engine
 
-[![Platform](https://img.shields.io/badge/Platform-Android_Native-3DDC84?logo=android&logoColor=white)](https://www.android.com/)
-[![Kotlin](https://img.shields.io/badge/Language-Kotlin-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org/)
-[![UI](https://img.shields.io/badge/UI-Jetpack_Compose-4285F4?logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
-[![AI](https://img.shields.io/badge/AI_Engine-PyTorch_Mobile-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/mobile/home/)
-[![CV](https://img.shields.io/badge/Vision-OpenCV_SDK-5C3EE8?logo=opencv&logoColor=white)](https://opencv.org/)
+[![Platform](https://img.shields.io/badge/Platform-Android_Native-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/)
+[![Kotlin](https://img.shields.io/badge/Language-Kotlin_1.9+-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
+[![UI](https://img.shields.io/badge/UI-Jetpack_Compose_Material3-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
+[![AI](https://img.shields.io/badge/AI_Engine-PyTorch_Mobile_Lite-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/mobile/home/)
+[![Computer Vision](https://img.shields.io/badge/Vision-OpenCV_SDK_4.x-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)](https://opencv.org/)
+[![License](https://img.shields.io/badge/License-Academic_Research-blue?style=for-the-badge)](LICENSE)
 
-Aksoro adalah aplikasi *mobile* Android *native* yang dirancang untuk menerjemahkan citra Aksara Jawa ke teks Latin secara *end-to-end*. Proyek ini dikembangkan sebagai implementasi Tugas Akhir (Skripsi) pada Program Studi Informatika, Universitas Pembangunan Jaya, guna memfasilitasi pelestarian aksara tradisional melalui teknologi *Artificial Intelligence*.
+**My Aksoro** is an end-to-end, on-device Android application designed to perform Optical Character Recognition (OCR) and transliteration of Javanese script (*Aksara Jawa*) into Latin text. 
 
-Sistem ini beroperasi dengan memadukan pengolahan citra (*Computer Vision*) dan *Deep Learning*, menggunakan arsitektur *hybrid* **MobileNetV2** (klasifikasi karakter) dan **Seq2Seq LSTM** (transliterasi bahasa). Seluruh proses inferensi berjalan langsung di dalam perangkat (*On-Device/Native Engine*).
-
----
-
-## 🛠️ Arsitektur & Teknologi Utama
-
-- **Platform:** Android Native (Kotlin), Min SDK 24 (Android 7.0)
-- **Antarmuka Pengguna (UI):** Jetpack Compose dengan `ActivityResultContracts`
-- **Prapemrosesan Citra:** OpenCV SDK (Segmentasi, Morfologi, *Bounding Box*)
-- **Mesin Inferensi:** PyTorch Mobile (Lite Interpreter `.ptl`)
-- **Modul Tambahan:** `android-image-cropper` (Pemotongan citra dinamis)
+Developed as an academic research project at **Universitas Pembangunan Jaya**, the system preserves indigenous cultural heritage by deploying a hybrid computer vision and deep learning pipeline directly on mobile devices without requiring cloud dependencies or active internet connection.
 
 ---
 
-## 🚀 Fitur & Alur Kerja Sistem (Pipeline)
+## Key Features
 
-Sistem `AksoroEngine` memproses masukan gambar hingga menjadi teks melalui tahapan berikut:
-
-1. **Pengambilan & Pemotongan Gambar:**
-   Menggunakan integrasi kamera/galeri yang langsung dihubungkan dengan fitur *cropping* bergaris bantu (guidelines) untuk memfokuskan citra pada teks.
-2. **Prapemrosesan & Segmentasi (OpenCV):**
-   - Konversi Grayscale, Reduksi *Noise* (Gaussian Blur 5x5), dan Binarisasi (OTSU + THRESH_BINARY_INV).
-   - Operasi dilatasi morfologi (kernel 3x10) untuk merekatkan elemen aksara.
-   - Deteksi kontur dan pembuatan *Bounding Box* dinamis.
-   - **Optimasi Padding:** Menggunakan *uniform center padding* (simetris 10 piksel) dengan latar belakang putih pekat (`Color.WHITE`). Metode ini diterapkan untuk mencegah *data leakage* yang sebelumnya terjadi pada teknik *contextual padding*, serta menghilangkan *bug* Alpha-Channel saat masuk ke dalam tensor.
-3. **Inferensi Klasifikasi (MobileNetV2):**
-   - Normalisasi matriks tensor (Mean: `[0.485, 0.456, 0.406]`, Std: `[0.229, 0.224, 0.225]`).
-   - Ekstraksi *logits*, kalkulasi *Softmax*, dan penerapan *Confidence Threshold* (25%).
-4. **Pemenggalan Kata & Transliterasi (Seq2Seq LSTM):**
-   - Algoritma *Chunking* linguistik Jawa (memisahkan nglegena, pasangan, dan sandhangan dengan aman).
-   - *Decoding Tensor* dinamis tanpa *hardcode* limitasi untuk mencegah kalimat terpotong sebelum token `<eos>`.
-5. **Visual Debugging (Sinar-X):**
-   Sistem mengembalikan struktur ganda (`Pair<List<Bitmap>, Bitmap>`) sehingga antarmuka dapat menampilkan *Bounding Box* deteksi OpenCV secara *real-time* kepada pengguna.
+- **100% On-Device & Offline Processing:** Runs local inference using OpenCV C++ SDK and PyTorch Mobile Lite (`.ptl`) for complete privacy and zero latency.
+- **Integrated Image Cropper & Camera Engine:** Built-in alignment guidelines for real-time camera capture and gallery uploads (`android-image-cropper`).
+- **Hybrid Deep Learning Pipeline:**
+  - **OpenCV Engine:** Noise reduction, OTSU threshold binarization, morphological dilation, and uniform center-padded contour segmentation.
+  - **MobileNetV2 CNN:** Lightweight, highly optimized Convolutional Neural Network for single-character recognition.
+  - **Seq2Seq LSTM:** Sequence-to-sequence model for context-aware Javanese-to-Latin transliteration.
+- **Precision Analytics & Visual Debugging:** Displays real-time confidence precision percentages, bounding box visualizations, character detection chips, and linguistic reading chunks.
+- **Persistent History Management:** Automatically saves past transliteration results with image caches, timestamps, and confidence metrics locally (`SharedPreferences`).
+- **Adaptive Material 3 Theme:** Full support for Light and Dark modes with responsive UI layouts and horizontal scrolling carousels.
 
 ---
 
-## ⚙️ Panduan Instalasi & Kompilasi
+## System Architecture & Processing Pipeline
 
-### Prasyarat:
-- Android Studio (dengan konfigurasi `build.gradle.kts` / Kotlin DSL)
-- NDK (Native Development Kit) untuk kompilasi library C++
+```mermaid
+graph TD
+    A[Image Input: Camera / Gallery] --> B[Crop & Alignment Filter]
+    B --> C[OpenCV Binarization & Gaussian Blur]
+    C --> D[Morphological Dilation & Bounding Box Extraction]
+    D --> E[Uniform Center Padding 10px]
+    E --> F[MobileNetV2 CNN Character Classifier]
+    F --> G[Javanese Linguistic Chunking Rules]
+    G --> H[Seq2Seq LSTM Transliteration Engine]
+    H --> I[Jetpack Compose UI & Local Storage]
+```
 
-### Langkah-langkah:
-1. **Clone repositori:**
-   ```bash
-   git clone https://github.com/dikaarnnd/myaksoro.git
-   ```
-2. **Impor Modul OpenCV:**
-   Pastikan modul OpenCV (versi lokal) telah terhubung. Cek berkas `build.gradle (Module :opencv)` dan pastikan `compileSdkVersion` & `targetSdkVersion` diatur ke **36**, dan `minSdkVersion` ke **24**.
-3. **Persiapkan Model AI:**
-   Letakkan file model PyTorch Mobile hasil konversi (`mobilenetv2_aksago.ptl` dan `seq2seq_aksago.ptl`) ke dalam direktori `app/src/main/assets/`.
-4. **Sinkronisasi Gradle:**
-   Jalankan *Gradle Sync*. *Project* ini telah dikonfigurasi dengan blok `packaging { jniLibs { pickFirsts.add("**/libc++_shared.so") } }` untuk menyelesaikan konflik pustaka C++ antara OpenCV dan PyTorch.
-5. **Jalankan Aplikasi (Run):**
-   Sambungkan perangkat Android atau jalankan emulator (direkomendasikan API 26+ untuk dukungan *adaptive-icon*), lalu klik **Run** di Android Studio.
-
----
-
-## 🔬 Catatan Pengembangan Model (Sim-to-Real Gap)
-
-Untuk pengembang yang ingin melatih ulang model, perhatikan penyesuaian (*troubleshooting*) berikut saat mengekspor model PyTorch ke format Mobile (`.ptl`):
-
-- **Menghindari Korupsi Bobot MobileNetV2:**
-  Lewati pemanggilan fungsi `optimize_for_mobile()` pada skrip konversi yang dikonfigurasi secara mandiri saat mengekspor model. Lakukan ekspor langsung menggunakan *Traced Model* (`_save_for_lite_interpreter`). Hal ini menjaga struktur fusi `Conv2d` dan `BatchNorm`, sehingga akurasi *on-device* tetap setara dengan pengujian di *environment* Python.
-- **Keselarasan Pemetaan Kelas:**
-  Pastikan *array classNames* di Kotlin disusun murni alfabetis (A-Z), mengikuti sifat *default* pustaka `ImageFolder` saat fase pelatihan.
-- **Ekspor Seq2Seq LSTM:**
-  Gunakan `torch.jit.script` alih-alih *tracing*, karena arsitektur LSTM memiliki perulangan (*looping*) pada komponen Decoder.
+1. **Preprocessing & Segmentation (OpenCV):**
+   - Grayscale conversion, Gaussian Noise Reduction ($5 \times 5$ kernel), and OTSU Inverse Binary Thresholding.
+   - Morphological dilation ($3 \times 10$ rectangular kernel) to merge connected script elements.
+   - Contour extraction and bounding box segmentation.
+   - **Uniform Center Padding:** Applies a 10-pixel symmetric white padding (`ARGB_8888`) around extracted glyphs. This prevents data leakage previously caused by contextual padding and eliminates alpha-channel tensor bugs.
+2. **Character Classification (MobileNetV2):**
+   - Resizes glyphs to $224 \times 224$ pixels, normalizes color matrices ($\mu = [0.485, 0.456, 0.406]$, $\sigma = [0.229, 0.224, 0.225]$).
+   - Softmax calculation with confidence thresholding ($\ge 0.20$).
+3. **Linguistic Chunking & Transliteration (Seq2Seq LSTM):**
+   - Applies Javanese linguistic rules (*Nglegena*, *Pasangan*, *Sandhangan*) to chunk character tokens.
+   - Dynamic sequence decoding prevents sentence truncation prior to the End-of-Sequence (`<eos>`) token.
 
 ---
 
-## 📄 Lisensi
+## Installation & Setup Guide
 
-Hak Cipta &copy; 2026. Aplikasi ini dikembangkan untuk tujuan penelitian akademik.
+Follow this step-by-step guide to set up, build, and run the project without errors.
+
+### Prerequisites
+
+Before you begin, ensure your development machine has the following installed:
+
+1. **Android Studio:** Android Studio Ladybug (2024.2.1+) or newer.
+2. **JDK:** Java Development Kit 17 (JDK 17) configured in Android Studio (`Settings -> Build, Execution, Deployment -> Build Tools -> Gradle`).
+3. **Android SDK:**
+   - **Compile SDK:** 34 / 35
+   - **Target SDK:** 34 / 35
+   - **Min SDK:** 24 (Android 7.0 Nougat)
+4. **Android NDK & CMake:** NDK (`r25c` or newer) installed via Android Studio SDK Manager (`Tools -> SDK Manager -> SDK Tools -> NDK (Side by side)` & `CMake`).
+
+---
+
+### Step-by-Step Setup
+
+#### Step 1: Clone the Repository
+Open your terminal or command prompt and clone the project:
+```bash
+git clone https://github.com/dikaarnnd/myaksoro.git
+cd myaksoro
+```
+
+#### Step 2: Verify AI Model Asset Files
+Ensure the two PyTorch Mobile Lite (`.ptl`) model files exist in the `app/src/main/assets/` directory:
+```text
+app/src/main/assets/
+├── mobilenetv2_aksoro_final.ptl
+└── seq2seq_aksoro_final.ptl
+```
+*(If missing, download the pre-trained weights from the repository releases and place them into `app/src/main/assets/`).*
+
+#### Step 3: Open Project in Android Studio
+1. Launch **Android Studio**.
+2. Click **Open** and select the root directory `myaksoro`.
+3. Allow Android Studio to automatically detect and import the Gradle structure.
+
+#### Step 4: Sync Gradle Project
+1. In Android Studio, click **File -> Sync Project with Gradle Files** (or click the elephant icon in the top-right toolbar).
+2. Wait for Gradle to download dependencies and configure the `:app` and `:opencv` modules.
+
+#### Step 5: Run the Project
+1. Connect a physical Android device via USB (with **USB Debugging** enabled) OR launch an Android Virtual Device (AVD Emulator with API 26+).
+2. Select the `:app` configuration in the top toolbar.
+3. Click **Run 'app'** (Green Play button) or press `Shift + F10`.
+
+---
+
+## Troubleshooting Common Build Errors
+
+### 1. JNI C++ Shared Library Conflict (`libc++_shared.so`)
+**Symptom:** Gradle build fails with duplicate `libc++_shared.so` files from PyTorch and OpenCV.  
+**Solution:** The project's `app/build.gradle.kts` handles this automatically using:
+```kotlin
+android {
+    packaging {
+        resources {
+            pickFirsts.add("**/libc++_shared.so")
+        }
+    }
+}
+```
+
+### 2. Emulator ABI Filter Mismatch
+**Symptom:** UnsatisfiedLinkError when running on x86_64 AVD Emulators vs ARM physical devices.  
+**Solution:** The `debug` build type is configured without ABI restrictions to support x86_64 emulators, while `release` restricts to `arm64-v8a` and `armeabi-v7a`.
+
+### 3. Out of Memory (OOM) / Heap Exhaustion
+**Symptom:** Gradle build times out or fails with Java Heap Space error.  
+**Solution:** Ensure `gradle.properties` includes sufficient heap allocation:
+```properties
+org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m
+```
+
+---
+
+## Project Directory Structure
+
+```text
+myaksoro/
+├── app/                                 # Main Android Application Module
+│   ├── build.gradle.kts                # App Dependencies & Build Configurations
+│   └── src/
+│       ├── main/
+│       │   ├── AndroidManifest.xml     # App Permissions & Manifest Declarations
+│       │   ├── assets/                 # PyTorch Mobile Lite Models (.ptl)
+│       │   │   ├── mobilenetv2_aksoro_final.ptl
+│       │   │   └── seq2seq_aksoro_final.ptl
+│       │   │
+│       │   ├── java/com/dika/myaksoro/
+│       │   │   ├── AksoroEngine.kt     # Core Image Processing & AI Inference Engine
+│       │   │   ├── MainActivity.kt     # App Entry Point & Scaffold Setup
+│       │   │   │
+│       │   │   ├── data/               # Data Layer
+│       │   │   │   └── HistoryManager.kt # SharedPreferences History Storage & Item Model
+│       │   │   │
+│       │   │   └── ui/                 # Jetpack Compose UI Layer
+│       │   │       ├── components/     # Reusable UI Components
+│       │   │       │   ├── AksoroBottomBar.kt
+│       │   │       │   ├── AksoroTopBar.kt
+│       │   │       │   ├── CaptureCard.kt
+│       │   │       │   ├── DeleteHistoryDialog.kt
+│       │   │       │   ├── DetectionChips.kt
+│       │   │       │   ├── ExpandableSectionHeader.kt
+│       │   │       │   ├── HistoryCard.kt
+│       │   │       │   ├── ImageSourceButtons.kt
+│       │   │       │   ├── ProcessingOverlay.kt
+│       │   │       │   ├── ReadingChunkList.kt
+│       │   │       │   ├── RecentHistorySection.kt
+│       │   │       │   ├── ResultCard.kt
+│       │   │       │   ├── ResultStyle.kt
+│       │   │       │   ├── SectionLabel.kt
+│       │   │       │   ├── TransliterationResultBox.kt
+│       │   │       │   ├── TransliterationResultContent.kt
+│       │   │       │   └── ZoomableImage.kt
+│       │   │       │
+│       │   │       ├── navigation/     # Navigation & State Hoisting
+│       │   │       │   └── AksoroNavHost.kt
+│       │   │       │
+│       │   │       ├── screens/        # Screen Views
+│       │   │       │   ├── HomeScreen.kt
+│       │   │       │   ├── HistoryScreen.kt
+│       │   │       │   ├── HistoryToolbar.kt
+│       │   │       │   └── SplashScreen.kt
+│       │   │       │
+│       │   │       └── theme/          # Material 3 Color Schemes & Typography
+│       │   │           ├── Color.kt
+│       │   │           ├── Theme.kt
+│       │   │           └── Type.kt
+│       │   │
+│       │   └── res/                    # App Drawables, Fonts & Strings
+│
+├── opencv/                             # OpenCV SDK Native Module
+├── gradle/                             # Gradle Wrapper & Version Catalog
+├── build.gradle.kts                    # Root Gradle Script
+├── settings.gradle.kts                 # Module Inclusions (`:app`, `:opencv`)
+└── README.md                           # Project Documentation
+```
+
+---
+
+## Machine Learning Model Export Guidelines
+
+For developers looking to retrain or export custom PyTorch models to PyTorch Mobile (`.ptl`):
+
+- **Avoid MobileNetV2 Weight Corruption:**  
+  Do not invoke `optimize_for_mobile()` during script conversion. Use direct Lite Interpreter export (`_save_for_lite_interpreter`) on traced models. This preserves `Conv2d` and `BatchNorm` fused layers, maintaining on-device accuracy matching Python test environments.
+- **Alphabetical Class Mapping Alignment:**  
+  Ensure the Kotlin `classNames` array is strictly sorted alphabetically (A-Z) to match PyTorch `ImageFolder` dataset indexing.
+- **Seq2Seq LSTM Scripting:**  
+  Use `torch.jit.script` instead of `torch.jit.trace` when exporting the Seq2Seq LSTM model to correctly support dynamic loops in the decoder architecture.
+
+
