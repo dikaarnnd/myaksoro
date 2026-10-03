@@ -4,8 +4,7 @@
 [![Kotlin](https://img.shields.io/badge/Language-Kotlin_1.9+-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
 [![UI](https://img.shields.io/badge/UI-Jetpack_Compose_Material3-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![AI](https://img.shields.io/badge/AI_Engine-PyTorch_Mobile_Lite-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/mobile/home/)
-[![Computer Vision](https://img.shields.io/badge/Vision-OpenCV_SDK_4.x-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)](https://opencv.org/)
-[![License](https://img.shields.io/badge/License-Academic_Research-blue?style=for-the-badge)](LICENSE)
+[![Computer Vision](https://img.shields.io/badge/Vision-OpenCV_SDK_4.13.0-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)](https://opencv.org/)
 
 **My Aksoro** is an end-to-end, on-device Android application designed to perform Optical Character Recognition (OCR) and transliteration of Javanese script (*Aksara Jawa*) into Latin text. 
 
@@ -30,15 +29,15 @@ Developed as an academic research project at **Universitas Pembangunan Jaya**, t
 ## System Architecture & Processing Pipeline
 
 ```mermaid
-graph TD
-    A[Image Input: Camera / Gallery] --> B[Crop & Alignment Filter]
-    B --> C[OpenCV Binarization & Gaussian Blur]
-    C --> D[Morphological Dilation & Bounding Box Extraction]
-    D --> E[Uniform Center Padding 10px]
-    E --> F[MobileNetV2 CNN Character Classifier]
-    F --> G[Javanese Linguistic Chunking Rules]
-    G --> H[Seq2Seq LSTM Transliteration Engine]
-    H --> I[Jetpack Compose UI & Local Storage]
+flowchart TD
+    A["Image Input: Camera / Gallery"] --> B["Crop & Alignment Filter"]
+    B --> C["OpenCV Binarization & Gaussian Blur"]
+    C --> D["Morphological Dilation & Contour Extraction"]
+    D --> E["Uniform Center Padding (10px)"]
+    E --> F["MobileNetV2 CNN Character Classifier"]
+    F --> G["Javanese Linguistic Chunking Rules"]
+    G --> H["Seq2Seq LSTM Transliteration Engine"]
+    H --> I["Jetpack Compose UI & Local Storage"]
 ```
 
 1. **Preprocessing & Segmentation (OpenCV):**
@@ -82,7 +81,26 @@ git clone https://github.com/dikaarnnd/myaksoro.git
 cd myaksoro
 ```
 
-#### Step 2: Verify AI Model Asset Files
+#### Step 2: Install and Verify OpenCV Android SDK
+OpenCV is an essential computer vision dependency for image preprocessing and character segmentation in this project.
+
+1. **Download Official OpenCV Android SDK:**
+   Download the official OpenCV Android SDK 4.13.0 or latest version from the official website:
+    **[Official OpenCV Releases](https://opencv.org/releases/)**
+2. **Link OpenCV Module to the Project:**
+   - Extract the downloaded `OpenCV-android-sdk.zip` archive.
+   - Ensure the `:opencv` module folder in this project is present and contains the OpenCV SDK Android library structure (`build.gradle`, `src/main`, and JNI C++ binaries under `sdk/native/libs/` or `src/main/jniLibs/`).
+   - Verify that `settings.gradle.kts` includes the OpenCV module:
+     ```kotlin
+     include(":app", ":opencv")
+     ```
+3. **Configure OpenCV Version Parameters:**
+   In `opencv/build.gradle` (or `opencv/build.gradle.kts`), verify that:
+   - `compileSdkVersion = 34` (or `35`)
+   - `minSdkVersion = 24`
+   - `targetSdkVersion = 34` (or `35`)
+
+#### Step 3: Verify AI Model Asset Files
 Ensure the two PyTorch Mobile Lite (`.ptl`) model files exist in the `app/src/main/assets/` directory:
 ```text
 app/src/main/assets/
@@ -91,16 +109,16 @@ app/src/main/assets/
 ```
 *(If missing, download the pre-trained weights from the repository releases and place them into `app/src/main/assets/`).*
 
-#### Step 3: Open Project in Android Studio
+#### Step 4: Open Project in Android Studio
 1. Launch **Android Studio**.
 2. Click **Open** and select the root directory `myaksoro`.
 3. Allow Android Studio to automatically detect and import the Gradle structure.
 
-#### Step 4: Sync Gradle Project
+#### Step 5: Sync Gradle Project
 1. In Android Studio, click **File -> Sync Project with Gradle Files** (or click the elephant icon in the top-right toolbar).
 2. Wait for Gradle to download dependencies and configure the `:app` and `:opencv` modules.
 
-#### Step 5: Run the Project
+#### Step 6: Run the Application
 1. Connect a physical Android device via USB (with **USB Debugging** enabled) OR launch an Android Virtual Device (AVD Emulator with API 26+).
 2. Select the `:app` configuration in the top toolbar.
 3. Click **Run 'app'** (Green Play button) or press `Shift + F10`.
